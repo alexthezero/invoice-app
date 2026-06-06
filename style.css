@@ -11,7 +11,6 @@ body {
   background: white;
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.1);
 }
 
 h1 {
@@ -21,10 +20,6 @@ h1 {
 
 h2 {
   margin-top: 30px;
-}
-
-h3 {
-  margin-top: 20px;
 }
 
 input,
@@ -40,7 +35,6 @@ textarea {
 
 textarea {
   min-height: 100px;
-  resize: vertical;
 }
 
 button {
@@ -53,15 +47,10 @@ button {
   color: white;
   font-size: 16px;
   font-weight: bold;
-  cursor: pointer;
-}
-
-button:active {
-  opacity: .85;
 }
 
 #clearSignature {
-  background: #666;
+  background: #777;
 }
 
 #downloadPdf {
@@ -79,24 +68,6 @@ button:active {
   touch-action: none;
 }
 
-.invoice-preview {
-  margin-top: 30px;
-  padding: 20px;
-  border: 2px solid #ddd;
-  border-radius: 10px;
-  background: white;
-}
-
-.invoice-preview hr {
-  margin: 20px 0;
-}
-
-.invoice-preview img {
-  max-width: 250px;
-  max-height: 100px;
-  border-bottom: 1px solid #000;
-}
-
 .saved-invoice {
   padding: 15px;
   border: 1px solid #ccc;
@@ -107,15 +78,4 @@ button:active {
 
 .saved-invoice button {
   margin-top: 8px;
-}
-
-@media (min-width: 768px) {
-  .button-row {
-    display: flex;
-    gap: 10px;
-  }
-
-  .button-row button {
-    flex: 1;
-  }
 }
