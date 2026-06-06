@@ -13,11 +13,9 @@ body {
   border-radius: 12px;
 }
 
-h1, h2, h3 {
-  margin-top: 0;
-}
-
-input, textarea, button {
+input,
+textarea,
+button {
   width: 100%;
   box-sizing: border-box;
   margin-bottom: 12px;
@@ -35,10 +33,6 @@ button {
   background: #1f6feb;
   color: white;
   font-weight: bold;
-}
-
-button:active {
-  opacity: 0.8;
 }
 
 #clearSignature {
