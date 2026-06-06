@@ -4,7 +4,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const ctx = canvas.getContext("2d");
   const servicesContainer = document.getElementById("servicesContainer");
   const totalPreview = document.getElementById("totalPreview");
-
   const logoPath = "./BAB89AB6-21E7-4651-B1DD-469BD6682619.png?v=1";
 
   document.getElementById("invoiceDate").valueAsDate = new Date();
@@ -17,7 +16,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return new Promise((resolve) => {
       const img = new Image();
       img.crossOrigin = "anonymous";
-
       img.onload = function () {
         const logoCanvas = document.createElement("canvas");
         logoCanvas.width = img.width;
@@ -26,12 +24,10 @@ document.addEventListener("DOMContentLoaded", () => {
         logoImage = logoCanvas.toDataURL("image/png");
         resolve();
       };
-
       img.onerror = function () {
         console.log("Logo failed to load.");
         resolve();
       };
-
       img.src = logoPath;
     });
   }
@@ -41,10 +37,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function setupCanvas() {
     const ratio = Math.max(window.devicePixelRatio || 1, 1);
     const rect = canvas.getBoundingClientRect();
-
     canvas.width = rect.width * ratio;
     canvas.height = rect.height * ratio;
-
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.lineWidth = 3;
     ctx.lineCap = "round";
@@ -58,7 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function getPosition(e) {
     const rect = canvas.getBoundingClientRect();
     const point = e.touches ? e.touches[0] : e;
-
     return {
       x: point.clientX - rect.left,
       y: point.clientY - rect.top
@@ -101,7 +94,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function addServiceRow(description = "", price = "") {
     const row = document.createElement("div");
     row.className = "service-row";
-
     row.innerHTML = `
       <textarea class="service-description" placeholder="Service Description" required>${description}</textarea>
       <input class="service-price" type="number" step="0.01" placeholder="Price" value="${price}" required />
@@ -118,7 +110,6 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("At least one service is required.");
         return;
       }
-
       row.remove();
       updateTotalPreview();
     });
@@ -137,7 +128,6 @@ document.addEventListener("DOMContentLoaded", () => {
     rows.forEach((row) => {
       const description = row.querySelector(".service-description").value.trim();
       const price = Number(row.querySelector(".service-price").value || 0);
-
       if (description || price > 0) {
         services.push({ description, price });
       }
@@ -185,7 +175,6 @@ document.addEventListener("DOMContentLoaded", () => {
     invoices.forEach((invoice, index) => {
       const div = document.createElement("div");
       div.className = "saved-invoice";
-
       div.innerHTML = `
         <strong>${invoice.customerName}</strong><br>
         Invoice #${invoice.invoiceNumber}<br>
@@ -195,7 +184,6 @@ document.addEventListener("DOMContentLoaded", () => {
         <button onclick="loadInvoice(${index})">Load Invoice</button>
         <button onclick="deleteInvoice(${index})">Delete</button>
       `;
-
       list.appendChild(div);
     });
   }
@@ -225,7 +213,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.deleteInvoice = function(index) {
     if (!confirm("Delete this invoice?")) return;
-
     invoices.splice(index, 1);
     localStorage.setItem("invoices", JSON.stringify(invoices));
     renderInvoices();
@@ -260,10 +247,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-
     const status = (invoice.paymentStatus || "UNPAID").toUpperCase();
 
-    // Header
     doc.setFillColor(0, 64, 115);
     doc.rect(0, 0, 210, 55, "F");
 
@@ -283,31 +268,28 @@ document.addEventListener("DOMContentLoaded", () => {
     doc.text("Professional Pressure Washing Services", 82, 29);
     doc.text("Palm Coast, Florida", 82, 39);
 
-    // Invoice badge
     doc.setFillColor(255, 255, 255);
-    doc.roundedRect(160, 8, 44, 23, 3, 3, "F");
+    doc.roundedRect(170, 10, 30, 14, 2, 2, "F");
 
     doc.setDrawColor(0, 168, 232);
-    doc.setLineWidth(0.5);
-    doc.roundedRect(160, 8, 44, 23, 3, 3, "S");
+    doc.setLineWidth(0.4);
+    doc.roundedRect(170, 10, 30, 14, 2, 2, "S");
 
-    doc.setTextColor(90, 90, 90);
+    doc.setTextColor(120, 120, 120);
     doc.setFont(undefined, "normal");
-    doc.setFontSize(7);
-    doc.text("Invoice #", 166, 16);
+    doc.setFontSize(5);
+    doc.text("Invoice #", 174, 15);
 
     doc.setTextColor(0, 64, 115);
     doc.setFont(undefined, "bold");
-    doc.setFontSize(9.5);
-    doc.text(`INV-${invoice.invoiceNumber}`, 166, 25);
+    doc.setFontSize(7.5);
+    doc.text(`INV-${invoice.invoiceNumber}`, 174, 20);
 
-    // Invoice title
     doc.setFontSize(24);
     doc.setTextColor(0, 64, 115);
     doc.setFont(undefined, "bold");
     doc.text("INVOICE", 20, 72);
 
-    // Watermark
     if (logoImage) {
       try {
         doc.setGState(new doc.GState({ opacity: 0.015 }));
@@ -318,7 +300,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // Service card
     const serviceCardX = 10;
     const serviceCardY = 85;
     const serviceCardW = 106;
@@ -359,7 +340,6 @@ document.addEventListener("DOMContentLoaded", () => {
       y += Math.max(6, lines.length * 4.5);
     });
 
-    // Total row
     doc.setFillColor(0, 64, 115);
     doc.roundedRect(serviceCardX + 5, serviceCardY + 47, serviceCardW - 10, 11, 3, 3, "F");
 
@@ -388,7 +368,6 @@ document.addEventListener("DOMContentLoaded", () => {
       doc.text(status, serviceCardX + 76, serviceCardY + 54);
     }
 
-    // Customer card
     const customerCardX = 122;
     const customerCardY = 85;
     const customerCardW = 78;
@@ -422,7 +401,6 @@ document.addEventListener("DOMContentLoaded", () => {
     doc.text(invoice.customerPhone || "", customerCardX + 29, customerCardY + 46);
     doc.text(invoice.date || "", customerCardX + 29, customerCardY + 57);
 
-    // Signature section
     const signatureY = 172;
 
     doc.setTextColor(0, 0, 0);
