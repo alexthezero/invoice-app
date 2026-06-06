@@ -8,36 +8,37 @@ invoiceDate.valueAsDate = new Date();
 let drawing = false;
 let invoices = JSON.parse(localStorage.getItem("invoices")) || [];
 
-function resizeCanvas() {
+function setupCanvas() {
+  const ratio = Math.max(window.devicePixelRatio || 1, 1);
   const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width;
-  canvas.height = rect.height;
-  ctx.lineWidth = 2;
+
+  canvas.width = rect.width * ratio;
+  canvas.height = rect.height * ratio;
+
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ctx.lineWidth = 3;
   ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = "#000";
 }
 
-resizeCanvas();
-window.addEventListener("resize", resizeCanvas);
+setTimeout(setupCanvas, 300);
+window.addEventListener("resize", setupCanvas);
 
 function getPosition(e) {
   const rect = canvas.getBoundingClientRect();
-
-  if (e.touches && e.touches.length > 0) {
-    return {
-      x: e.touches[0].clientX - rect.left,
-      y: e.touches[0].clientY - rect.top
-    };
-  }
+  const touch = e.touches ? e.touches[0] : e;
 
   return {
-    x: e.clientX - rect.left,
-    y: e.clientY - rect.top
+    x: touch.clientX - rect.left,
+    y: touch.clientY - rect.top
   };
 }
 
 function startDrawing(e) {
   e.preventDefault();
   drawing = true;
+
   const pos = getPosition(e);
   ctx.beginPath();
   ctx.moveTo(pos.x, pos.y);
@@ -45,6 +46,7 @@ function startDrawing(e) {
 
 function draw(e) {
   if (!drawing) return;
+
   e.preventDefault();
   const pos = getPosition(e);
   ctx.lineTo(pos.x, pos.y);
@@ -52,21 +54,20 @@ function draw(e) {
 }
 
 function stopDrawing(e) {
+  if (!drawing) return;
   e.preventDefault();
   drawing = false;
 }
 
-canvas.addEventListener("mousedown", startDrawing);
-canvas.addEventListener("mousemove", draw);
-canvas.addEventListener("mouseup", stopDrawing);
-canvas.addEventListener("mouseleave", stopDrawing);
-
-canvas.addEventListener("touchstart", startDrawing);
-canvas.addEventListener("touchmove", draw);
-canvas.addEventListener("touchend", stopDrawing);
+canvas.addEventListener("pointerdown", startDrawing, { passive: false });
+canvas.addEventListener("pointermove", draw, { passive: false });
+canvas.addEventListener("pointerup", stopDrawing, { passive: false });
+canvas.addEventListener("pointercancel", stopDrawing, { passive: false });
+canvas.addEventListener("pointerleave", stopDrawing, { passive: false });
 
 document.getElementById("clearSignature").addEventListener("click", () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  setupCanvas();
 });
 
 function updatePreview(invoice) {
