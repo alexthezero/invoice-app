@@ -4,6 +4,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const ctx = canvas.getContext("2d");
   const servicesContainer = document.getElementById("servicesContainer");
   const totalPreview = document.getElementById("totalPreview");
+  const paidPreview = document.getElementById("paidPreview");
+  const balancePreview = document.getElementById("balancePreview");
+  const amountPaidInput = document.getElementById("amountPaid");
+  const paymentStatusSelect = document.getElementById("paymentStatus");
   const logoPath = "./BAB89AB6-21E7-4651-B1DD-469BD6682619.png?v=1";
 
   document.getElementById("invoiceDate").valueAsDate = new Date();
@@ -16,6 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return new Promise((resolve) => {
       const img = new Image();
       img.crossOrigin = "anonymous";
+
       img.onload = function () {
         const logoCanvas = document.createElement("canvas");
         logoCanvas.width = img.width;
@@ -24,10 +29,12 @@ document.addEventListener("DOMContentLoaded", () => {
         logoImage = logoCanvas.toDataURL("image/png");
         resolve();
       };
+
       img.onerror = function () {
         console.log("Logo failed to load.");
         resolve();
       };
+
       img.src = logoPath;
     });
   }
@@ -37,8 +44,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function setupCanvas() {
     const ratio = Math.max(window.devicePixelRatio || 1, 1);
     const rect = canvas.getBoundingClientRect();
+
     canvas.width = rect.width * ratio;
     canvas.height = rect.height * ratio;
+
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.lineWidth = 3;
     ctx.lineCap = "round";
@@ -52,6 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function getPosition(e) {
     const rect = canvas.getBoundingClientRect();
     const point = e.touches ? e.touches[0] : e;
+
     return {
       x: point.clientX - rect.left,
       y: point.clientY - rect.top
@@ -61,6 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function startDrawing(e) {
     e.preventDefault();
     drawing = true;
+
     const pos = getPosition(e);
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
@@ -68,7 +79,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function draw(e) {
     if (!drawing) return;
+
     e.preventDefault();
+
     const pos = getPosition(e);
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
@@ -76,6 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function stopDrawing(e) {
     if (!drawing) return;
+
     e.preventDefault();
     drawing = false;
   }
@@ -94,6 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function addServiceRow(description = "", price = "") {
     const row = document.createElement("div");
     row.className = "service-row";
+
     row.innerHTML = `
       <textarea class="service-description" placeholder="Service Description" required>${description}</textarea>
       <input class="service-price" type="number" step="0.01" placeholder="Price" value="${price}" required />
@@ -110,6 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("At least one service is required.");
         return;
       }
+
       row.remove();
       updateTotalPreview();
     });
@@ -121,6 +137,22 @@ document.addEventListener("DOMContentLoaded", () => {
     addServiceRow();
   });
 
+  amountPaidInput.addEventListener("input", updateTotalPreview);
+
+  paymentStatusSelect.addEventListener("change", () => {
+    const total = calculateTotal(getServicesFromForm());
+
+    if (paymentStatusSelect.value === "PAID") {
+      amountPaidInput.value = total.toFixed(2);
+    }
+
+    if (paymentStatusSelect.value === "UNPAID") {
+      amountPaidInput.value = "0";
+    }
+
+    updateTotalPreview();
+  });
+
   function getServicesFromForm() {
     const rows = document.querySelectorAll(".service-row");
     const services = [];
@@ -128,6 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
     rows.forEach((row) => {
       const description = row.querySelector(".service-description").value.trim();
       const price = Number(row.querySelector(".service-price").value || 0);
+
       if (description || price > 0) {
         services.push({ description, price });
       }
@@ -140,9 +173,27 @@ document.addEventListener("DOMContentLoaded", () => {
     return services.reduce((sum, service) => sum + Number(service.price || 0), 0);
   }
 
+  function calculateBalance(total, amountPaid) {
+    return Math.max(total - amountPaid, 0);
+  }
+
   function updateTotalPreview() {
     const services = getServicesFromForm();
-    totalPreview.textContent = calculateTotal(services).toFixed(2);
+    const total = calculateTotal(services);
+    const amountPaid = Number(amountPaidInput.value || 0);
+    const balance = calculateBalance(total, amountPaid);
+
+    totalPreview.textContent = total.toFixed(2);
+    paidPreview.textContent = amountPaid.toFixed(2);
+    balancePreview.textContent = balance.toFixed(2);
+
+    if (amountPaid <= 0) {
+      paymentStatusSelect.value = "UNPAID";
+    } else if (amountPaid >= total && total > 0) {
+      paymentStatusSelect.value = "PAID";
+    } else if (amountPaid > 0 && amountPaid < total) {
+      paymentStatusSelect.value = "PARTIAL";
+    }
   }
 
   function getNextInvoiceNumber() {
@@ -154,6 +205,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function getInvoiceFromForm(existingNumber = null) {
     const services = getServicesFromForm();
+    const total = calculateTotal(services);
+    const amountPaid = Number(amountPaidInput.value || 0);
+    const balance = calculateBalance(total, amountPaid);
 
     return {
       invoiceNumber: existingNumber || getNextInvoiceNumber(),
@@ -162,8 +216,10 @@ document.addEventListener("DOMContentLoaded", () => {
       customerPhone: document.getElementById("customerPhone").value,
       date: document.getElementById("invoiceDate").value,
       services,
-      total: calculateTotal(services),
-      paymentStatus: document.getElementById("paymentStatus").value,
+      total,
+      amountPaid,
+      balance,
+      paymentStatus: paymentStatusSelect.value,
       signature: canvas.toDataURL("image/png")
     };
   }
@@ -175,15 +231,20 @@ document.addEventListener("DOMContentLoaded", () => {
     invoices.forEach((invoice, index) => {
       const div = document.createElement("div");
       div.className = "saved-invoice";
+
       div.innerHTML = `
         <strong>${invoice.customerName}</strong><br>
         Invoice #${invoice.invoiceNumber}<br>
         ${invoice.date}<br>
-        $${Number(invoice.total || 0).toFixed(2)} - ${invoice.paymentStatus || "UNPAID"}<br><br>
+        Total: $${Number(invoice.total || 0).toFixed(2)}<br>
+        Paid: $${Number(invoice.amountPaid || 0).toFixed(2)}<br>
+        Balance: $${Number(invoice.balance || 0).toFixed(2)}<br>
+        Status: ${invoice.paymentStatus || "UNPAID"}<br><br>
         <button onclick="downloadSavedInvoice(${index})">Download PDF</button>
         <button onclick="loadInvoice(${index})">Load Invoice</button>
         <button onclick="deleteInvoice(${index})">Delete</button>
       `;
+
       list.appendChild(div);
     });
   }
@@ -195,7 +256,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("customerAddress").value = invoice.customerAddress;
     document.getElementById("customerPhone").value = invoice.customerPhone;
     document.getElementById("invoiceDate").value = invoice.date;
-    document.getElementById("paymentStatus").value = invoice.paymentStatus || "UNPAID";
+    paymentStatusSelect.value = invoice.paymentStatus || "UNPAID";
+    amountPaidInput.value = Number(invoice.amountPaid || 0).toFixed(2);
 
     servicesContainer.innerHTML = "";
 
@@ -213,6 +275,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.deleteInvoice = function(index) {
     if (!confirm("Delete this invoice?")) return;
+
     invoices.splice(index, 1);
     localStorage.setItem("invoices", JSON.stringify(invoices));
     renderInvoices();
@@ -247,7 +310,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
+
     const status = (invoice.paymentStatus || "UNPAID").toUpperCase();
+    const amountPaid = Number(invoice.amountPaid || 0);
+    const balance = Number(invoice.balance || calculateBalance(invoice.total || 0, amountPaid));
 
     doc.setFillColor(0, 64, 115);
     doc.rect(0, 0, 210, 55, "F");
@@ -303,7 +369,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const serviceCardX = 10;
     const serviceCardY = 85;
     const serviceCardW = 106;
-    const serviceCardH = 62;
+    const serviceCardH = 70;
 
     doc.setFillColor(255, 255, 255);
     doc.roundedRect(serviceCardX, serviceCardY, serviceCardW, serviceCardH, 5, 5, "F");
@@ -341,37 +407,45 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     doc.setFillColor(0, 64, 115);
-    doc.roundedRect(serviceCardX + 5, serviceCardY + 47, serviceCardW - 10, 11, 3, 3, "F");
+    doc.roundedRect(serviceCardX + 5, serviceCardY + 47, serviceCardW - 10, 19, 3, 3, "F");
 
     doc.setTextColor(255, 255, 255);
     doc.setFont(undefined, "bold");
     doc.setFontSize(6.2);
-    doc.text("TOTAL DUE", serviceCardX + 9, serviceCardY + 51.5);
+    doc.text("TOTAL", serviceCardX + 9, serviceCardY + 52);
+    doc.text("PAID", serviceCardX + 9, serviceCardY + 58);
+    doc.text("BALANCE", serviceCardX + 9, serviceCardY + 64);
 
-    doc.setFontSize(10.5);
-    doc.text(`$${Number(invoice.total || 0).toFixed(2)}`, serviceCardX + 9, serviceCardY + 57);
+    doc.setFontSize(7.5);
+    doc.text(`$${Number(invoice.total || 0).toFixed(2)}`, serviceCardX + 36, serviceCardY + 52);
+    doc.text(`$${amountPaid.toFixed(2)}`, serviceCardX + 36, serviceCardY + 58);
+    doc.text(`$${balance.toFixed(2)}`, serviceCardX + 36, serviceCardY + 64);
 
     if (status === "PAID") {
       doc.setFillColor(0, 145, 65);
+    } else if (status === "PARTIAL") {
+      doc.setFillColor(220, 120, 0);
     } else {
       doc.setFillColor(190, 0, 0);
     }
 
-    doc.roundedRect(serviceCardX + 72, serviceCardY + 49, 28, 7, 2, 2, "F");
+    doc.roundedRect(serviceCardX + 72, serviceCardY + 54, 28, 8, 2, 2, "F");
 
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(5.5);
+    doc.setFontSize(5.2);
 
     if (status === "PAID") {
-      doc.text(status, serviceCardX + 80, serviceCardY + 54);
+      doc.text(status, serviceCardX + 80, serviceCardY + 59.5);
+    } else if (status === "PARTIAL") {
+      doc.text(status, serviceCardX + 76.5, serviceCardY + 59.5);
     } else {
-      doc.text(status, serviceCardX + 76, serviceCardY + 54);
+      doc.text(status, serviceCardX + 76, serviceCardY + 59.5);
     }
 
     const customerCardX = 122;
     const customerCardY = 85;
     const customerCardW = 78;
-    const customerCardH = 62;
+    const customerCardH = 70;
 
     doc.setFillColor(255, 255, 255);
     doc.roundedRect(customerCardX, customerCardY, customerCardW, customerCardH, 5, 5, "F");
@@ -389,19 +463,19 @@ document.addEventListener("DOMContentLoaded", () => {
     doc.setFont(undefined, "bold");
     doc.setFontSize(8);
     doc.text("Name", customerCardX + 5, customerCardY + 24);
-    doc.text("Address", customerCardX + 5, customerCardY + 35);
-    doc.text("Phone", customerCardX + 5, customerCardY + 46);
-    doc.text("Date", customerCardX + 5, customerCardY + 57);
+    doc.text("Address", customerCardX + 5, customerCardY + 36);
+    doc.text("Phone", customerCardX + 5, customerCardY + 49);
+    doc.text("Date", customerCardX + 5, customerCardY + 62);
 
     doc.setTextColor(0, 0, 0);
     doc.setFont(undefined, "normal");
     doc.setFontSize(8.5);
     doc.text(doc.splitTextToSize(invoice.customerName || "", 43), customerCardX + 29, customerCardY + 24);
-    doc.text(doc.splitTextToSize(invoice.customerAddress || "", 41), customerCardX + 29, customerCardY + 35);
-    doc.text(invoice.customerPhone || "", customerCardX + 29, customerCardY + 46);
-    doc.text(invoice.date || "", customerCardX + 29, customerCardY + 57);
+    doc.text(doc.splitTextToSize(invoice.customerAddress || "", 41), customerCardX + 29, customerCardY + 36);
+    doc.text(invoice.customerPhone || "", customerCardX + 29, customerCardY + 49);
+    doc.text(invoice.date || "", customerCardX + 29, customerCardY + 62);
 
-    const signatureY = 172;
+    const signatureY = 180;
 
     doc.setTextColor(0, 0, 0);
     doc.setFont(undefined, "bold");
