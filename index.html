@@ -6,7 +6,7 @@
 
   <title>IronNest Pressure Washing Invoice App</title>
 
-  <link rel="stylesheet" href="style.css?v=12" />
+  <link rel="stylesheet" href="style.css?v=13" />
   <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 
@@ -28,22 +28,11 @@
       <input id="customerPhone" placeholder="Customer Phone" />
       <input id="invoiceDate" type="date" />
 
-      <textarea
-        id="serviceDescription"
-        placeholder="Service Description"
-        required
-      ></textarea>
+      <textarea id="serviceDescription" placeholder="Service Description" required></textarea>
 
-      <input
-        id="price"
-        type="number"
-        step="0.01"
-        placeholder="Price"
-        required
-      />
+      <input id="price" type="number" step="0.01" placeholder="Price" required />
 
       <label class="status-label">Invoice Status</label>
-
       <select id="paymentStatus">
         <option value="UNPAID">UNPAID</option>
         <option value="PAID">PAID</option>
@@ -52,23 +41,15 @@
       <h3>Customer Signature</h3>
       <canvas id="signaturePad"></canvas>
 
-      <button type="button" id="clearSignature">
-        Clear Signature
-      </button>
-
-      <button type="submit">
-        Save Invoice
-      </button>
-
-      <button type="button" id="downloadPdf">
-        Download PDF
-      </button>
+      <button type="button" id="clearSignature">Clear Signature</button>
+      <button type="submit">Save Invoice</button>
+      <button type="button" id="downloadPdf">Download PDF</button>
     </form>
 
     <h2>Saved Invoices</h2>
     <div id="invoiceList"></div>
   </div>
 
-  <script src="app.js?v=12"></script>
+  <script src="app.js?v=13"></script>
 </body>
 </html>
