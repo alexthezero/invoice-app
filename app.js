@@ -2,6 +2,8 @@ const form = document.getElementById("invoiceForm");
 const canvas = document.getElementById("signaturePad");
 const ctx = canvas.getContext("2d");
 
+const logoUrl = "https://alexthezero.github.io/invoice-app/BAB89AB6-21E7-4651-B1DD-469BD6682619.png";
+
 document.getElementById("invoiceDate").valueAsDate = new Date();
 
 let drawing = false;
@@ -164,82 +166,97 @@ function createPdf(invoice) {
   const doc = new jsPDF();
 
   doc.setFillColor(0, 64, 115);
-  doc.rect(0, 0, 210, 45, "F");
+  doc.rect(0, 0, 210, 50, "F");
 
   doc.setFillColor(0, 168, 232);
-  doc.circle(185, 20, 30, "F");
+  doc.circle(190, 18, 28, "F");
+
+  try {
+    doc.addImage(logoUrl, "PNG", 12, 7, 45, 32);
+  } catch (error) {
+    console.log("Logo could not be added.");
+  }
 
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(22);
-  doc.text("IronNest Pressure Washing", 20, 18);
+  doc.setFontSize(20);
+  doc.text("IronNest Pressure Washing", 62, 20);
 
-  doc.setFontSize(11);
-  doc.text("Professional Pressure Washing Services", 20, 28);
+  doc.setFontSize(10);
+  doc.text("Professional Pressure Washing Services", 62, 29);
+  doc.text("Palm Coast, Florida", 62, 37);
 
   doc.setFontSize(13);
-  doc.text(`Invoice #${invoice.invoiceNumber}`, 148, 18);
-  doc.text(invoice.paymentStatus || "UNPAID", 148, 28);
+  doc.text(`INV-${invoice.invoiceNumber}`, 150, 20);
+  doc.text(invoice.paymentStatus || "UNPAID", 150, 30);
 
-  doc.setTextColor(210, 240, 255);
-  doc.setFontSize(48);
-  doc.text("IRONNEST", 42, 155, { angle: 35 });
+  try {
+    doc.addImage(logoUrl, "PNG", 52, 98, 105, 75, undefined, "FAST", 35);
+  } catch (error) {
+    doc.setTextColor(220, 245, 255);
+    doc.setFontSize(48);
+    doc.text("IRONNEST", 42, 155, { angle: 35 });
+  }
 
   doc.setTextColor(0, 0, 0);
 
   doc.setFontSize(16);
-  doc.text("Customer Information", 20, 60);
+  doc.text("Customer Information", 20, 65);
 
   doc.setDrawColor(0, 168, 232);
-  doc.line(20, 64, 190, 64);
+  doc.line(20, 69, 190, 69);
 
   doc.setFontSize(12);
-  doc.text(`Date: ${invoice.date || ""}`, 20, 77);
-  doc.text(`Customer: ${invoice.customerName || ""}`, 20, 87);
-  doc.text(`Address: ${invoice.customerAddress || ""}`, 20, 97);
-  doc.text(`Phone: ${invoice.customerPhone || ""}`, 20, 107);
+  doc.text(`Date: ${invoice.date || ""}`, 20, 82);
+  doc.text(`Customer: ${invoice.customerName || ""}`, 20, 92);
+  doc.text(`Address: ${invoice.customerAddress || ""}`, 20, 102);
+  doc.text(`Phone: ${invoice.customerPhone || ""}`, 20, 112);
 
   doc.setFontSize(16);
-  doc.text("Service Details", 20, 127);
+  doc.text("Service Details", 20, 132);
 
   doc.setDrawColor(0, 168, 232);
-  doc.line(20, 131, 190, 131);
+  doc.line(20, 136, 190, 136);
 
   doc.setFontSize(12);
   const serviceLines = doc.splitTextToSize(invoice.serviceDescription || "", 170);
-  doc.text(serviceLines, 20, 144);
+  doc.text(serviceLines, 20, 149);
 
-  doc.setFillColor(230, 247, 255);
-  doc.roundedRect(20, 175, 170, 25, 3, 3, "F");
+  doc.setFillColor(220, 245, 255);
+  doc.roundedRect(20, 180, 170, 25, 3, 3, "F");
 
+  doc.setTextColor(0, 35, 60);
   doc.setFontSize(18);
-  doc.text(`Total Due: $${Number(invoice.price || 0).toFixed(2)}`, 25, 191);
+  doc.text(`Total Due: $${Number(invoice.price || 0).toFixed(2)}`, 25, 196);
 
   if ((invoice.paymentStatus || "").toUpperCase() === "PAID") {
     doc.setTextColor(0, 150, 80);
     doc.setFontSize(38);
-    doc.text("PAID", 135, 192);
-    doc.setTextColor(0, 0, 0);
+    doc.text("PAID", 135, 197);
   }
 
+  doc.setTextColor(0, 0, 0);
   doc.setFontSize(12);
-  doc.text("Customer Signature:", 20, 220);
+  doc.text("Customer Authorization:", 20, 223);
 
   try {
-    doc.addImage(invoice.signature, "PNG", 20, 225, 80, 35);
-  } catch (error) {}
+    doc.addImage(invoice.signature, "PNG", 20, 228, 80, 35);
+  } catch (error) {
+    console.log("Signature could not be added.");
+  }
 
   doc.setDrawColor(0, 0, 0);
-  doc.line(20, 263, 105, 263);
+  doc.line(20, 266, 105, 266);
 
   doc.setFontSize(9);
   doc.setTextColor(80, 80, 80);
-  doc.text("Thank you for choosing IronNest Pressure Washing.", 20, 282);
+  doc.text("Customer Signature", 20, 272);
+  doc.text("Thank you for choosing IronNest Pressure Washing.", 20, 286);
 
   const safeName = invoice.customerName
     ? invoice.customerName.replace(/[^a-z0-9]/gi, "_").toLowerCase()
     : "customer";
 
-  doc.save(`IronNest-Invoice-${invoice.invoiceNumber}-${safeName}.pdf`);
+  doc.save(`IronNest-INV-${invoice.invoiceNumber}-${safeName}.pdf`);
 }
 
 document.getElementById("downloadPdf").addEventListener("click", () => {
