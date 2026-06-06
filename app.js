@@ -7,7 +7,6 @@ invoiceDate.valueAsDate = new Date();
 
 let drawing = false;
 let invoices = JSON.parse(localStorage.getItem("invoices")) || [];
-let currentInvoice = null;
 
 function setupCanvas() {
   const ratio = Math.max(window.devicePixelRatio || 1, 1);
@@ -28,11 +27,11 @@ window.addEventListener("resize", setupCanvas);
 
 function getPosition(e) {
   const rect = canvas.getBoundingClientRect();
-  const touch = e.touches ? e.touches[0] : e;
+  const point = e.touches ? e.touches[0] : e;
 
   return {
-    x: touch.clientX - rect.left,
-    y: touch.clientY - rect.top
+    x: point.clientX - rect.left,
+    y: point.clientY - rect.top
   };
 }
 
@@ -49,6 +48,7 @@ function draw(e) {
   if (!drawing) return;
 
   e.preventDefault();
+
   const pos = getPosition(e);
   ctx.lineTo(pos.x, pos.y);
   ctx.stroke();
@@ -56,6 +56,7 @@ function draw(e) {
 
 function stopDrawing(e) {
   if (!drawing) return;
+
   e.preventDefault();
   drawing = false;
 }
@@ -65,6 +66,10 @@ canvas.addEventListener("pointermove", draw, { passive: false });
 canvas.addEventListener("pointerup", stopDrawing, { passive: false });
 canvas.addEventListener("pointercancel", stopDrawing, { passive: false });
 canvas.addEventListener("pointerleave", stopDrawing, { passive: false });
+
+canvas.addEventListener("touchstart", startDrawing, { passive: false });
+canvas.addEventListener("touchmove", draw, { passive: false });
+canvas.addEventListener("touchend", stopDrawing, { passive: false });
 
 document.getElementById("clearSignature").addEventListener("click", () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -106,7 +111,6 @@ function renderInvoices() {
 
 window.loadInvoice = function(index) {
   const invoice = invoices[index];
-  currentInvoice = invoice;
 
   document.getElementById("companyName").value = invoice.companyName;
   document.getElementById("customerName").value = invoice.customerName;
@@ -135,15 +139,13 @@ form.addEventListener("submit", (e) => {
   invoices.push(invoice);
   localStorage.setItem("invoices", JSON.stringify(invoices));
 
-  currentInvoice = invoice;
-
   renderInvoices();
 
   alert("Invoice saved locally on this device.");
 });
 
 document.getElementById("downloadPdf").addEventListener("click", () => {
-  if (!window.jspdf) {
+  if (!window.jspdf || !window.jspdf.jsPDF) {
     alert("PDF tool did not load. Refresh the page and try again.");
     return;
   }
