@@ -68,7 +68,6 @@ function getPosition(e) {
 function startDrawing(e) {
   e.preventDefault();
   drawing = true;
-
   const pos = getPosition(e);
   ctx.beginPath();
   ctx.moveTo(pos.x, pos.y);
@@ -76,9 +75,7 @@ function startDrawing(e) {
 
 function draw(e) {
   if (!drawing) return;
-
   e.preventDefault();
-
   const pos = getPosition(e);
   ctx.lineTo(pos.x, pos.y);
   ctx.stroke();
@@ -86,7 +83,6 @@ function draw(e) {
 
 function stopDrawing(e) {
   if (!drawing) return;
-
   e.preventDefault();
   drawing = false;
 }
@@ -198,35 +194,38 @@ async function createPdf(invoice) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
+  // Header
   doc.setFillColor(0, 64, 115);
-  doc.rect(0, 0, 210, 50, "F");
+  doc.rect(0, 0, 210, 48, "F");
 
   if (logoImage) {
     try {
-      doc.addImage(logoImage, "PNG", 12, 7, 42, 30);
+      doc.addImage(logoImage, "PNG", 8, 4, 65, 42);
     } catch (error) {
       console.log("Header logo could not be added.");
     }
   }
 
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(20);
-  doc.text("IronNest Pressure Washing", 62, 18);
+  doc.setFontSize(19);
+  doc.text("IronNest Pressure Washing", 78, 18);
 
   doc.setFontSize(10);
-  doc.text("Professional Pressure Washing Services", 62, 28);
-  doc.text("Palm Coast, Florida", 62, 36);
+  doc.text("Professional Pressure Washing Services", 78, 28);
+  doc.text("Palm Coast, Florida", 78, 36);
 
+  // Invoice badge
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(145, 10, 48, 24, 3, 3, "F");
+  doc.roundedRect(150, 10, 45, 22, 3, 3, "F");
 
   doc.setTextColor(0, 64, 115);
-  doc.setFontSize(12);
-  doc.text(`INV-${invoice.invoiceNumber}`, 151, 19);
+  doc.setFontSize(11);
+  doc.text(`INV-${invoice.invoiceNumber}`, 154, 19);
 
-  doc.setFontSize(10);
-  doc.text(invoice.paymentStatus || "UNPAID", 151, 29);
+  doc.setFontSize(9);
+  doc.text(invoice.paymentStatus || "UNPAID", 154, 28);
 
+  // Watermark
   if (logoImage) {
     try {
       doc.setGState(new doc.GState({ opacity: 0.04 }));
@@ -237,10 +236,10 @@ async function createPdf(invoice) {
     }
   }
 
+  // Customer section
   doc.setTextColor(0, 0, 0);
-
   doc.setFontSize(16);
-  doc.text("Customer Information", 20, 65);
+  doc.text("Customer Information", 20, 64);
 
   doc.setDrawColor(0, 168, 232);
   doc.line(20, 69, 190, 69);
@@ -251,16 +250,17 @@ async function createPdf(invoice) {
   doc.text(`Address: ${invoice.customerAddress || ""}`, 20, 102);
   doc.text(`Phone: ${invoice.customerPhone || ""}`, 20, 112);
 
+  // Service section
   doc.setFontSize(16);
-  doc.text("Service Details", 20, 132);
+  doc.text("Service Details", 20, 130);
 
   doc.setDrawColor(0, 168, 232);
-  doc.line(20, 136, 190, 136);
+  doc.line(20, 135, 190, 135);
 
   doc.setFontSize(11);
   doc.setTextColor(80, 80, 80);
-  doc.text("Description", 20, 148);
-  doc.text("Amount", 160, 148);
+  doc.text("Description", 20, 147);
+  doc.text("Amount", 160, 147);
 
   doc.setDrawColor(210, 230, 240);
   doc.line(20, 152, 190, 152);
@@ -272,6 +272,7 @@ async function createPdf(invoice) {
   doc.text(serviceLines, 20, 162);
   doc.text(`$${Number(invoice.price || 0).toFixed(2)}`, 160, 162);
 
+  // Total box
   doc.setFillColor(0, 64, 115);
   doc.roundedRect(20, 185, 170, 25, 3, 3, "F");
 
@@ -285,6 +286,7 @@ async function createPdf(invoice) {
     doc.text("PAID", 135, 202);
   }
 
+  // Signature
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(12);
   doc.text("Customer Authorization:", 20, 225);
