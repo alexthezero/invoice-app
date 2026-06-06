@@ -1,112 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>IronNest Pressure Washing Invoice App</title>
+  <title>IronNest Pressure Washing Invoice App</title>
 
-    <link rel="stylesheet" href="style.css?v=9">
-
-    <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css?v=10" />
+  <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 
 <body>
-
-<div class="app">
-
+  <div class="app">
     <div class="brand-header">
-        <img
-            src="./BAB89AB6-21E7-4651-B1DD-469BD6682619.png?v=1"
-            alt="IronNest Pressure Washing Logo"
-        >
+      <img
+        src="./BAB89AB6-21E7-4651-B1DD-469BD6682619.png?v=1"
+        alt="IronNest Pressure Washing Logo"
+      />
 
-        <h1>IronNest Pressure Washing</h1>
-        <p>Professional Pressure Washing Services</p>
+      <h1>IronNest Pressure Washing</h1>
+      <p>Professional Pressure Washing Services</p>
     </div>
 
     <form id="invoiceForm">
+      <input id="customerName" placeholder="Customer Name" required />
+      <input id="customerAddress" placeholder="Customer Address" />
+      <input id="customerPhone" placeholder="Customer Phone" />
+      <input id="invoiceDate" type="date" />
 
-        <input
-            type="text"
-            id="customerName"
-            placeholder="Customer Name"
-            required
-        >
+      <textarea id="serviceDescription" placeholder="Service Description" required></textarea>
 
-        <input
-            type="text"
-            id="customerAddress"
-            placeholder="Customer Address"
-        >
+      <input id="price" type="number" step="0.01" placeholder="Price" required />
 
-        <input
-            type="text"
-            id="customerPhone"
-            placeholder="Customer Phone"
-        >
+      <label class="status-label">Invoice Status</label>
+      <select id="paymentStatus">
+        <option value="UNPAID">UNPAID</option>
+        <option value="PAID">PAID</option>
+      </select>
 
-        <input
-            type="date"
-            id="invoiceDate"
-        >
+      <h3>Customer Signature</h3>
+      <canvas id="signaturePad"></canvas>
 
-        <textarea
-            id="serviceDescription"
-            placeholder="Service Description"
-            required
-        ></textarea>
-
-        <input
-            type="number"
-            id="price"
-            step="0.01"
-            placeholder="Price"
-            required
-        >
-
-        <label class="status-label">
-            Invoice Status
-        </label>
-
-        <select id="paymentStatus">
-            <option value="UNPAID">UNPAID</option>
-            <option value="PAID">PAID</option>
-        </select>
-
-        <h3>Customer Signature</h3>
-
-        <canvas id="signaturePad"></canvas>
-
-        <button
-            type="button"
-            id="clearSignature"
-        >
-            Clear Signature
-        </button>
-
-        <button
-            type="submit"
-        >
-            Save Invoice
-        </button>
-
-        <button
-            type="button"
-            id="downloadPdf"
-        >
-            Download PDF
-        </button>
-
+      <button type="button" id="clearSignature">Clear Signature</button>
+      <button type="submit">Save Invoice</button>
+      <button type="button" id="downloadPdf">Download PDF</button>
     </form>
 
     <h2>Saved Invoices</h2>
-
     <div id="invoiceList"></div>
+  </div>
 
-</div>
-
-<script src="app.js?v=9"></script>
-
+  <script src="app.js?v=10"></script>
 </body>
 </html>
