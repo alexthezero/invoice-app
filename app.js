@@ -1,6 +1,8 @@
 const form = document.getElementById("invoiceForm");
 const canvas = document.getElementById("signaturePad");
 const ctx = canvas.getContext("2d");
+const servicesContainer = document.getElementById("servicesContainer");
+const totalPreview = document.getElementById("totalPreview");
 
 const logoPath = "./BAB89AB6-21E7-4651-B1DD-469BD6682619.png?v=1";
 
@@ -106,6 +108,69 @@ document.getElementById("clearSignature").addEventListener("click", () => {
   setupCanvas();
 });
 
+function addServiceRow(description = "", price = "") {
+  const row = document.createElement("div");
+  row.className = "service-row";
+
+  row.innerHTML = `
+    <textarea class="service-description" placeholder="Service Description" required>${description}</textarea>
+    <input class="service-price" type="number" step="0.01" placeholder="Price" value="${price}" required />
+    <button type="button" class="remove-service">Remove Service</button>
+  `;
+
+  servicesContainer.appendChild(row);
+
+  row.querySelector(".service-price").addEventListener("input", updateTotalPreview);
+  row.querySelector(".service-description").addEventListener("input", updateTotalPreview);
+
+  row.querySelector(".remove-service").addEventListener("click", () => {
+    if (document.querySelectorAll(".service-row").length === 1) {
+      alert("At least one service is required.");
+      return;
+    }
+
+    row.remove();
+    updateTotalPreview();
+  });
+
+  updateTotalPreview();
+}
+
+document.getElementById("addServiceButton").addEventListener("click", () => {
+  addServiceRow();
+});
+
+function getServicesFromForm() {
+  const rows = document.querySelectorAll(".service-row");
+  const services = [];
+
+  rows.forEach((row) => {
+    const description = row.querySelector(".service-description").value.trim();
+    const price = Number(row.querySelector(".service-price").value || 0);
+
+    if (description || price > 0) {
+      services.push({
+        description,
+        price
+      });
+    }
+  });
+
+  return services;
+}
+
+function calculateTotal(services) {
+  return services.reduce((sum, service) => {
+    return sum + Number(service.price || 0);
+  }, 0);
+}
+
+function updateTotalPreview() {
+  const services = getServicesFromForm();
+  const total = calculateTotal(services);
+  totalPreview.textContent = total.toFixed(2);
+}
+
 function getNextInvoiceNumber() {
   const lastNumber = Number(localStorage.getItem("lastInvoiceNumber")) || 1000;
   const nextNumber = lastNumber + 1;
@@ -114,6 +179,8 @@ function getNextInvoiceNumber() {
 }
 
 function getInvoiceFromForm(existingNumber = null) {
+  const services = getServicesFromForm();
+
   return {
     invoiceNumber: existingNumber || getNextInvoiceNumber(),
     companyName: "IronNest Pressure Washing",
@@ -121,8 +188,8 @@ function getInvoiceFromForm(existingNumber = null) {
     customerAddress: document.getElementById("customerAddress").value,
     customerPhone: document.getElementById("customerPhone").value,
     date: document.getElementById("invoiceDate").value,
-    serviceDescription: document.getElementById("serviceDescription").value,
-    price: document.getElementById("price").value,
+    services,
+    total: calculateTotal(services),
     paymentStatus: document.getElementById("paymentStatus").value,
     signature: canvas.toDataURL("image/png")
   };
@@ -136,11 +203,13 @@ function renderInvoices() {
     const div = document.createElement("div");
     div.className = "saved-invoice";
 
+    const total = Number(invoice.total || 0).toFixed(2);
+
     div.innerHTML = `
       <strong>${invoice.customerName}</strong><br>
       Invoice #${invoice.invoiceNumber}<br>
       ${invoice.date}<br>
-      $${Number(invoice.price || 0).toFixed(2)} - ${invoice.paymentStatus || "UNPAID"}<br><br>
+      $${total} - ${invoice.paymentStatus || "UNPAID"}<br><br>
       <button onclick="downloadSavedInvoice(${index})">Download PDF</button>
       <button onclick="loadInvoice(${index})">Load Invoice</button>
       <button onclick="deleteInvoice(${index})">Delete</button>
@@ -157,9 +226,19 @@ window.loadInvoice = function(index) {
   document.getElementById("customerAddress").value = invoice.customerAddress;
   document.getElementById("customerPhone").value = invoice.customerPhone;
   document.getElementById("invoiceDate").value = invoice.date;
-  document.getElementById("serviceDescription").value = invoice.serviceDescription;
-  document.getElementById("price").value = invoice.price;
   document.getElementById("paymentStatus").value = invoice.paymentStatus || "UNPAID";
+
+  servicesContainer.innerHTML = "";
+
+  if (invoice.services && invoice.services.length > 0) {
+    invoice.services.forEach((service) => {
+      addServiceRow(service.description, service.price);
+    });
+  } else {
+    addServiceRow();
+  }
+
+  updateTotalPreview();
 
   alert("Invoice loaded.");
 };
@@ -176,6 +255,11 @@ form.addEventListener("submit", (e) => {
   e.preventDefault();
 
   const invoice = getInvoiceFromForm();
+
+  if (invoice.services.length === 0) {
+    alert("Please add at least one service.");
+    return;
+  }
 
   invoices.push(invoice);
   localStorage.setItem("invoices", JSON.stringify(invoices));
@@ -198,7 +282,6 @@ async function createPdf(invoice) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  // Header
   doc.setFillColor(0, 64, 115);
   doc.rect(0, 0, 210, 55, "F");
 
@@ -218,12 +301,10 @@ async function createPdf(invoice) {
   doc.text("Professional Pressure Washing Services", 82, 29);
   doc.text("Palm Coast, Florida", 82, 39);
 
-  // Invoice title
   doc.setFontSize(24);
   doc.setTextColor(0, 64, 115);
   doc.text("INVOICE", 20, 72);
 
-  // Watermark
   if (logoImage) {
     try {
       doc.setGState(new doc.GState({ opacity: 0.02 }));
@@ -234,7 +315,6 @@ async function createPdf(invoice) {
     }
   }
 
-  // Customer section
   doc.setTextColor(0, 0, 0);
   doc.setFont(undefined, "normal");
   doc.setFontSize(16);
@@ -256,7 +336,6 @@ async function createPdf(invoice) {
   doc.text(invoice.customerAddress || "", 48, 133);
   doc.text(invoice.customerPhone || "", 48, 145);
 
-  // Service section
   doc.setFontSize(16);
   doc.text("Service Details", 20, 162);
 
@@ -276,46 +355,54 @@ async function createPdf(invoice) {
   doc.setFont(undefined, "normal");
   doc.setFontSize(12);
 
-  const serviceLines = doc.splitTextToSize(invoice.serviceDescription || "", 125);
-  doc.text(serviceLines, 20, 196);
-  doc.text(`$${Number(invoice.price || 0).toFixed(2)}`, 160, 196);
+  let y = 196;
+
+  invoice.services.forEach((service) => {
+    const serviceLines = doc.splitTextToSize(service.description || "", 125);
+
+    doc.text(serviceLines, 20, y);
+    doc.text(`$${Number(service.price || 0).toFixed(2)}`, 160, y);
+
+    y += Math.max(10, serviceLines.length * 6 + 4);
+  });
 
   doc.setDrawColor(220, 220, 220);
-  doc.line(20, 207, 190, 207);
+  doc.line(20, y + 2, 190, y + 2);
 
-  // Total box
+  const totalBoxY = Math.max(218, y + 12);
+
   doc.setFillColor(0, 64, 115);
-  doc.roundedRect(20, 218, 170, 26, 3, 3, "F");
+  doc.roundedRect(20, totalBoxY, 170, 26, 3, 3, "F");
 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(19);
   doc.setFont(undefined, "bold");
-  doc.text(`Total Due: $${Number(invoice.price || 0).toFixed(2)}`, 26, 235);
+  doc.text(`Total Due: $${Number(invoice.total || 0).toFixed(2)}`, 26, totalBoxY + 17);
 
-  // Signature section
+  const signatureY = totalBoxY + 36;
+
   doc.setTextColor(0, 0, 0);
   doc.setFont(undefined, "bold");
   doc.setFontSize(12);
-  doc.text("Customer Authorization:", 20, 254);
+  doc.text("Customer Authorization:", 20, signatureY);
 
   doc.setFont(undefined, "normal");
 
   try {
-    doc.addImage(invoice.signature, "PNG", 20, 258, 70, 28);
+    doc.addImage(invoice.signature, "PNG", 20, signatureY + 4, 70, 28);
   } catch (error) {
     console.log("Signature could not be added.");
   }
 
   doc.setDrawColor(0, 0, 0);
-  doc.line(20, 287, 105, 287);
+  doc.line(20, signatureY + 33, 105, signatureY + 33);
 
   doc.setFontSize(8);
   doc.setTextColor(80, 80, 80);
-  doc.text("Customer Signature", 20, 293);
+  doc.text("Customer Signature", 20, signatureY + 39);
 
-  // Invoice status card in lower-right
   const cardX = 130;
-  const cardY = 245;
+  const cardY = signatureY - 9;
   const cardW = 60;
   const cardH = 38;
 
@@ -360,7 +447,7 @@ async function createPdf(invoice) {
   doc.setFont(undefined, "normal");
   doc.setFontSize(8);
   doc.setTextColor(80, 80, 80);
-  doc.text("Generated by IronNest Invoice System", 120, 293);
+  doc.text("Generated by IronNest Invoice System", 120, signatureY + 39);
 
   const safeName = invoice.customerName
     ? invoice.customerName.replace(/[^a-z0-9]/gi, "_").toLowerCase()
@@ -371,6 +458,12 @@ async function createPdf(invoice) {
 
 document.getElementById("downloadPdf").addEventListener("click", () => {
   const invoice = getInvoiceFromForm();
+
+  if (invoice.services.length === 0) {
+    alert("Please add at least one service.");
+    return;
+  }
+
   createPdf(invoice);
 });
 
@@ -378,4 +471,5 @@ window.downloadSavedInvoice = function(index) {
   createPdf(invoices[index]);
 };
 
+addServiceRow();
 renderInvoices();
