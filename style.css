@@ -2,68 +2,120 @@ body {
   font-family: Arial, sans-serif;
   background: #f4f4f4;
   margin: 0;
-  padding: 20px;
+  padding: 15px;
 }
 
 .app {
-  max-width: 700px;
+  max-width: 800px;
   margin: auto;
   background: white;
   padding: 20px;
   border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.1);
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+h2 {
+  margin-top: 30px;
+}
+
+h3 {
+  margin-top: 20px;
 }
 
 input,
-textarea,
-button {
+textarea {
   width: 100%;
   box-sizing: border-box;
-  margin-bottom: 12px;
   padding: 12px;
+  margin-bottom: 12px;
   font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
 }
 
 textarea {
   min-height: 100px;
+  resize: vertical;
 }
 
 button {
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 10px;
   border: none;
   border-radius: 8px;
   background: #1f6feb;
   color: white;
+  font-size: 16px;
   font-weight: bold;
+  cursor: pointer;
+}
+
+button:active {
+  opacity: .85;
 }
 
 #clearSignature {
-  background: #777;
+  background: #666;
+}
+
+#downloadPdf {
+  background: #28a745;
 }
 
 #signaturePad {
+  display: block;
   width: 100%;
-  height: 180px;
-  border: 2px solid #333;
-  border-radius: 8px;
-  touch-action: none;
+  height: 220px;
   background: white;
+  border: 3px solid #222;
+  border-radius: 10px;
+  margin-bottom: 15px;
+  touch-action: none;
 }
 
 .invoice-preview {
-  margin-top: 20px;
+  margin-top: 30px;
   padding: 20px;
-  border: 1px solid #ddd;
+  border: 2px solid #ddd;
+  border-radius: 10px;
   background: white;
+}
+
+.invoice-preview hr {
+  margin: 20px 0;
 }
 
 .invoice-preview img {
   max-width: 250px;
+  max-height: 100px;
   border-bottom: 1px solid #000;
 }
 
 .saved-invoice {
-  padding: 12px;
+  padding: 15px;
   border: 1px solid #ccc;
-  margin-bottom: 10px;
   border-radius: 8px;
   background: #fafafa;
+  margin-bottom: 12px;
+}
+
+.saved-invoice button {
+  margin-top: 8px;
+}
+
+@media (min-width: 768px) {
+  .button-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .button-row button {
+    flex: 1;
+  }
 }
