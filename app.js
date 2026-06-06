@@ -68,6 +68,7 @@ function getPosition(e) {
 function startDrawing(e) {
   e.preventDefault();
   drawing = true;
+
   const pos = getPosition(e);
   ctx.beginPath();
   ctx.moveTo(pos.x, pos.y);
@@ -75,7 +76,9 @@ function startDrawing(e) {
 
 function draw(e) {
   if (!drawing) return;
+
   e.preventDefault();
+
   const pos = getPosition(e);
   ctx.lineTo(pos.x, pos.y);
   ctx.stroke();
@@ -83,6 +86,7 @@ function draw(e) {
 
 function stopDrawing(e) {
   if (!drawing) return;
+
   e.preventDefault();
   drawing = false;
 }
@@ -196,11 +200,11 @@ async function createPdf(invoice) {
 
   // Header
   doc.setFillColor(0, 64, 115);
-  doc.rect(0, 0, 210, 48, "F");
+  doc.rect(0, 0, 210, 50, "F");
 
   if (logoImage) {
     try {
-      doc.addImage(logoImage, "PNG", 8, 4, 65, 42);
+      doc.addImage(logoImage, "PNG", 5, 2, 72, 46);
     } catch (error) {
       console.log("Header logo could not be added.");
     }
@@ -216,20 +220,31 @@ async function createPdf(invoice) {
 
   // Invoice badge
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(150, 10, 45, 22, 3, 3, "F");
+  doc.roundedRect(160, 10, 35, 18, 3, 3, "F");
 
   doc.setTextColor(0, 64, 115);
-  doc.setFontSize(11);
-  doc.text(`INV-${invoice.invoiceNumber}`, 154, 19);
-
   doc.setFontSize(9);
-  doc.text(invoice.paymentStatus || "UNPAID", 154, 28);
+  doc.text(`INV-${invoice.invoiceNumber}`, 163, 17);
+
+  if ((invoice.paymentStatus || "").toUpperCase() === "PAID") {
+    doc.setTextColor(0, 150, 0);
+  } else {
+    doc.setTextColor(200, 0, 0);
+  }
+
+  doc.setFontSize(8);
+  doc.text(invoice.paymentStatus || "UNPAID", 163, 24);
+
+  // Invoice title
+  doc.setFontSize(22);
+  doc.setTextColor(0, 64, 115);
+  doc.text("INVOICE", 20, 62);
 
   // Watermark
   if (logoImage) {
     try {
       doc.setGState(new doc.GState({ opacity: 0.04 }));
-      doc.addImage(logoImage, "PNG", 30, 78, 150, 110);
+      doc.addImage(logoImage, "PNG", 30, 82, 150, 110);
       doc.setGState(new doc.GState({ opacity: 1 }));
     } catch (error) {
       console.log("Watermark logo could not be added.");
@@ -239,71 +254,71 @@ async function createPdf(invoice) {
   // Customer section
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(16);
-  doc.text("Customer Information", 20, 64);
+  doc.text("Customer Information", 20, 78);
 
   doc.setDrawColor(0, 168, 232);
-  doc.line(20, 69, 190, 69);
+  doc.line(20, 83, 190, 83);
 
   doc.setFontSize(12);
-  doc.text(`Date: ${invoice.date || ""}`, 20, 82);
-  doc.text(`Customer: ${invoice.customerName || ""}`, 20, 92);
-  doc.text(`Address: ${invoice.customerAddress || ""}`, 20, 102);
-  doc.text(`Phone: ${invoice.customerPhone || ""}`, 20, 112);
+  doc.text(`Date: ${invoice.date || ""}`, 20, 96);
+  doc.text(`Customer: ${invoice.customerName || ""}`, 20, 106);
+  doc.text(`Address: ${invoice.customerAddress || ""}`, 20, 116);
+  doc.text(`Phone: ${invoice.customerPhone || ""}`, 20, 126);
 
   // Service section
   doc.setFontSize(16);
-  doc.text("Service Details", 20, 130);
+  doc.text("Service Details", 20, 144);
 
   doc.setDrawColor(0, 168, 232);
-  doc.line(20, 135, 190, 135);
+  doc.line(20, 149, 190, 149);
 
   doc.setFontSize(11);
   doc.setTextColor(80, 80, 80);
-  doc.text("Description", 20, 147);
-  doc.text("Amount", 160, 147);
+  doc.text("Description", 20, 161);
+  doc.text("Amount", 160, 161);
 
   doc.setDrawColor(210, 230, 240);
-  doc.line(20, 152, 190, 152);
+  doc.line(20, 166, 190, 166);
 
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(12);
 
   const serviceLines = doc.splitTextToSize(invoice.serviceDescription || "", 125);
-  doc.text(serviceLines, 20, 162);
-  doc.text(`$${Number(invoice.price || 0).toFixed(2)}`, 160, 162);
+  doc.text(serviceLines, 20, 176);
+  doc.text(`$${Number(invoice.price || 0).toFixed(2)}`, 160, 176);
 
   // Total box
   doc.setFillColor(0, 64, 115);
-  doc.roundedRect(20, 185, 170, 25, 3, 3, "F");
+  doc.roundedRect(20, 198, 170, 25, 3, 3, "F");
 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(18);
-  doc.text(`Total Due: $${Number(invoice.price || 0).toFixed(2)}`, 25, 201);
+  doc.text(`Total Due: $${Number(invoice.price || 0).toFixed(2)}`, 25, 214);
 
   if ((invoice.paymentStatus || "").toUpperCase() === "PAID") {
     doc.setTextColor(0, 180, 95);
     doc.setFontSize(34);
-    doc.text("PAID", 135, 202);
+    doc.text("PAID", 135, 215);
   }
 
   // Signature
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(12);
-  doc.text("Customer Authorization:", 20, 225);
+  doc.text("Customer Authorization:", 20, 236);
 
   try {
-    doc.addImage(invoice.signature, "PNG", 20, 230, 80, 35);
+    doc.addImage(invoice.signature, "PNG", 20, 241, 80, 35);
   } catch (error) {
     console.log("Signature could not be added.");
   }
 
   doc.setDrawColor(0, 0, 0);
-  doc.line(20, 268, 105, 268);
+  doc.line(20, 280, 105, 280);
 
   doc.setFontSize(9);
   doc.setTextColor(80, 80, 80);
-  doc.text("Customer Signature", 20, 274);
-  doc.text("Thank you for choosing IronNest Pressure Washing.", 20, 286);
+  doc.text("Customer Signature", 20, 286);
+  doc.text("Generated by IronNest Invoice System", 120, 286);
 
   const safeName = invoice.customerName
     ? invoice.customerName.replace(/[^a-z0-9]/gi, "_").toLowerCase()
