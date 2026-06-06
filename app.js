@@ -295,57 +295,27 @@ document.addEventListener("DOMContentLoaded", () => {
     doc.setTextColor(0, 64, 115);
     doc.text("INVOICE", 20, 72);
 
-    // Summary cards
-    const cardY = 82;
-    const leftX = 20;
-    const rightX = 110;
-    const cardH = 50;
-
-    doc.setFillColor(0, 64, 115);
-    doc.roundedRect(leftX, cardY, 80, cardH, 3, 3, "F");
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFont(undefined, "bold");
-    doc.setFontSize(10);
-    doc.text("TOTAL DUE", leftX + 6, cardY + 10);
-
-    doc.setFontSize(20);
-    doc.text(`$${Number(invoice.total || 0).toFixed(2)}`, leftX + 6, cardY + 28);
-
-    doc.setFontSize(9);
-    doc.text(`INV-${invoice.invoiceNumber}`, leftX + 6, cardY + 41);
-
-    if ((invoice.paymentStatus || "").toUpperCase() === "PAID") {
-      doc.setTextColor(60, 255, 120);
-    } else {
-      doc.setTextColor(255, 110, 110);
-    }
-
-    doc.text(invoice.paymentStatus || "UNPAID", leftX + 42, cardY + 41);
-
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(rightX, cardY, 80, cardH, 3, 3, "F");
-
-    doc.setDrawColor(0, 168, 232);
-    doc.setLineWidth(0.6);
-    doc.roundedRect(rightX, cardY, 80, cardH, 3, 3, "S");
-
-    doc.setTextColor(0, 64, 115);
-    doc.setFont(undefined, "bold");
-    doc.setFontSize(10);
-    doc.text("CUSTOMER", rightX + 6, cardY + 10);
-
+    // Customer Information
     doc.setTextColor(0, 0, 0);
     doc.setFont(undefined, "normal");
-    doc.setFontSize(9);
+    doc.setFontSize(16);
+    doc.text("Customer Information", 20, 90);
 
-    const nameLines = doc.splitTextToSize(invoice.customerName || "", 65);
-    const addressLines = doc.splitTextToSize(invoice.customerAddress || "", 65);
+    doc.setDrawColor(0, 168, 232);
+    doc.line(20, 95, 190, 95);
 
-    doc.text(nameLines, rightX + 6, cardY + 20);
-    doc.text(addressLines, rightX + 6, cardY + 29);
-    doc.text(invoice.customerPhone || "", rightX + 6, cardY + 38);
-    doc.text(invoice.date || "", rightX + 6, cardY + 46);
+    doc.setFontSize(12);
+    doc.setFont(undefined, "bold");
+    doc.text("Date:", 20, 109);
+    doc.text("Customer:", 20, 121);
+    doc.text("Address:", 20, 133);
+    doc.text("Phone:", 20, 145);
+
+    doc.setFont(undefined, "normal");
+    doc.text(invoice.date || "", 48, 109);
+    doc.text(invoice.customerName || "", 48, 121);
+    doc.text(invoice.customerAddress || "", 48, 133);
+    doc.text(invoice.customerPhone || "", 48, 145);
 
     // Watermark
     if (logoImage) {
@@ -358,29 +328,27 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // Services
-    doc.setTextColor(0, 0, 0);
-    doc.setFont(undefined, "normal");
+    // Service Details
     doc.setFontSize(16);
-    doc.text("Service Details", 20, 150);
+    doc.text("Service Details", 20, 162);
 
     doc.setDrawColor(0, 168, 232);
-    doc.line(20, 155, 190, 155);
+    doc.line(20, 167, 190, 167);
 
     doc.setFontSize(11);
     doc.setTextColor(0, 64, 115);
     doc.setFont(undefined, "bold");
-    doc.text("Description", 20, 168);
-    doc.text("Amount", 160, 168);
+    doc.text("Description", 20, 179);
+    doc.text("Amount", 160, 179);
 
     doc.setDrawColor(150, 150, 150);
-    doc.line(20, 173, 190, 173);
+    doc.line(20, 184, 190, 184);
 
     doc.setTextColor(0, 0, 0);
     doc.setFont(undefined, "normal");
     doc.setFontSize(12);
 
-    let y = 185;
+    let y = 196;
 
     invoice.services.forEach((service) => {
       const serviceLines = doc.splitTextToSize(service.description || "", 125);
@@ -394,8 +362,33 @@ document.addEventListener("DOMContentLoaded", () => {
     doc.setDrawColor(220, 220, 220);
     doc.line(20, y + 2, 190, y + 2);
 
-    // Authorization
-    const signatureY = Math.min(245, Math.max(220, y + 18));
+    // Total Due bar with Paid/Unpaid badge
+    const totalBoxY = Math.min(214, Math.max(205, y + 14));
+
+    doc.setFillColor(0, 64, 115);
+    doc.roundedRect(20, totalBoxY, 170, 26, 3, 3, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont(undefined, "bold");
+    doc.text(`Total Due: $${Number(invoice.total || 0).toFixed(2)}`, 26, totalBoxY + 17);
+
+    const status = (invoice.paymentStatus || "UNPAID").toUpperCase();
+
+    if (status === "PAID") {
+      doc.setFillColor(0, 145, 65);
+    } else {
+      doc.setFillColor(190, 0, 0);
+    }
+
+    doc.roundedRect(145, totalBoxY + 6, 38, 14, 2, 2, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.text(status, 151, totalBoxY + 16);
+
+    // Customer Authorization
+    const signatureY = totalBoxY + 38;
 
     doc.setTextColor(0, 0, 0);
     doc.setFont(undefined, "bold");
@@ -417,6 +410,13 @@ document.addEventListener("DOMContentLoaded", () => {
     doc.setTextColor(80, 80, 80);
     doc.text("Customer Signature", 20, signatureY + 40);
 
+    // Invoice number bottom-right
+    doc.setFont(undefined, "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(0, 64, 115);
+    doc.text(`INV-${invoice.invoiceNumber}`, 160, signatureY + 40);
+
+    doc.setFont(undefined, "normal");
     doc.setFontSize(8);
     doc.setTextColor(80, 80, 80);
     doc.text("Generated by IronNest Invoice System", 20, 290);
