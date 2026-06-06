@@ -6,7 +6,7 @@
 
   <title>IronNest Pressure Washing Invoice App</title>
 
-  <link rel="stylesheet" href="style.css?v=34" />
+  <link rel="stylesheet" href="style.css?v=35" />
   <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 
@@ -46,7 +46,14 @@
         <option value="PAID">PAID</option>
       </select>
 
-      <input id="amountPaid" type="number" step="0.01" placeholder="Amount Paid" value="0" />
+      <input
+        id="amountPaid"
+        type="number"
+        step="0.01"
+        min="0"
+        placeholder="Amount Paid"
+        value="0"
+      />
 
       <h3>Customer Signature</h3>
       <canvas id="signaturePad"></canvas>
@@ -60,6 +67,6 @@
     <div id="invoiceList"></div>
   </div>
 
-  <script src="app.js?v=34"></script>
+  <script src="app.js?v=35"></script>
 </body>
 </html>
