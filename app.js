@@ -292,8 +292,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (logoImage) {
       try {
-        doc.setGState(new doc.GState({ opacity: 0.015 }));
-        doc.addImage(logoImage, "PNG", 30, 112, 150, 105);
+        doc.setGState(new doc.GState({ opacity: 0.07 }));
+        doc.addImage(logoImage, "PNG", 20, 105, 170, 120);
         doc.setGState(new doc.GState({ opacity: 1 }));
       } catch (error) {
         console.log("Watermark logo could not be added.");
