@@ -2,12 +2,41 @@ const form = document.getElementById("invoiceForm");
 const canvas = document.getElementById("signaturePad");
 const ctx = canvas.getContext("2d");
 
-const logoUrl = "https://alexthezero.github.io/invoice-app/BAB89AB6-21E7-4651-B1DD-469BD6682619.png";
+const logoPath = "./BAB89AB6-21E7-4651-B1DD-469BD6682619.png?v=1";
 
 document.getElementById("invoiceDate").valueAsDate = new Date();
 
 let drawing = false;
 let invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+let logoImage = null;
+
+function loadLogo() {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+
+    img.onload = function () {
+      const logoCanvas = document.createElement("canvas");
+      logoCanvas.width = img.width;
+      logoCanvas.height = img.height;
+
+      const logoCtx = logoCanvas.getContext("2d");
+      logoCtx.drawImage(img, 0, 0);
+
+      logoImage = logoCanvas.toDataURL("image/png");
+      resolve();
+    };
+
+    img.onerror = function () {
+      console.log("Logo failed to load.");
+      resolve();
+    };
+
+    img.src = logoPath;
+  });
+}
+
+loadLogo();
 
 function setupCanvas() {
   const ratio = Math.max(window.devicePixelRatio || 1, 1);
@@ -156,10 +185,14 @@ form.addEventListener("submit", (e) => {
   alert("Invoice saved locally on this device.");
 });
 
-function createPdf(invoice) {
+async function createPdf(invoice) {
   if (!window.jspdf || !window.jspdf.jsPDF) {
     alert("PDF tool did not load. Refresh the page and try again.");
     return;
+  }
+
+  if (!logoImage) {
+    await loadLogo();
   }
 
   const { jsPDF } = window.jspdf;
@@ -171,10 +204,12 @@ function createPdf(invoice) {
   doc.setFillColor(0, 168, 232);
   doc.circle(190, 18, 28, "F");
 
-  try {
-    doc.addImage(logoUrl, "PNG", 12, 7, 45, 32);
-  } catch (error) {
-    console.log("Logo could not be added.");
+  if (logoImage) {
+    try {
+      doc.addImage(logoImage, "PNG", 12, 7, 45, 32);
+    } catch (error) {
+      console.log("Header logo could not be added.");
+    }
   }
 
   doc.setTextColor(255, 255, 255);
@@ -189,9 +224,15 @@ function createPdf(invoice) {
   doc.text(`INV-${invoice.invoiceNumber}`, 150, 20);
   doc.text(invoice.paymentStatus || "UNPAID", 150, 30);
 
-  try {
-    doc.addImage(logoUrl, "PNG", 52, 98, 105, 75, undefined, "FAST", 35);
-  } catch (error) {
+  if (logoImage) {
+    try {
+      doc.setGState(new doc.GState({ opacity: 0.08 }));
+      doc.addImage(logoImage, "PNG", 45, 90, 120, 90);
+      doc.setGState(new doc.GState({ opacity: 1 }));
+    } catch (error) {
+      console.log("Watermark logo could not be added.");
+    }
+  } else {
     doc.setTextColor(220, 245, 255);
     doc.setFontSize(48);
     doc.text("IRONNEST", 42, 155, { angle: 35 });
