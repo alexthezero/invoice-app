@@ -1,13 +1,53 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>My Invoice App</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice App</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
+  <div class="app">
     <h1>Invoice App</h1>
-    <button id="testButton">Click Me</button>
 
-    <script src="app.js"></script>
+    <form id="invoiceForm">
+      <input id="companyName" placeholder="Company Name" value="Your Company Name" />
+      <input id="customerName" placeholder="Customer Name" required />
+      <input id="customerAddress" placeholder="Customer Address" />
+      <input id="customerPhone" placeholder="Customer Phone" />
+      <input id="invoiceDate" type="date" />
+      <textarea id="serviceDescription" placeholder="Service Description" required></textarea>
+      <input id="price" type="number" step="0.01" placeholder="Price" required />
+
+      <h3>Customer Signature</h3>
+      <canvas id="signaturePad"></canvas>
+
+      <button type="button" id="clearSignature">Clear Signature</button>
+      <button type="submit">Save Invoice</button>
+      <button type="button" id="downloadPdf">Download PDF</button>
+    </form>
+
+    <h2>Saved Invoices</h2>
+    <div id="invoiceList"></div>
+
+    <div id="invoicePreview" class="invoice-preview">
+      <h2 id="previewCompany"></h2>
+      <h3>Invoice</h3>
+      <p><strong>Date:</strong> <span id="previewDate"></span></p>
+      <p><strong>Customer:</strong> <span id="previewCustomer"></span></p>
+      <p><strong>Address:</strong> <span id="previewAddress"></span></p>
+      <p><strong>Phone:</strong> <span id="previewPhone"></span></p>
+      <hr />
+      <p><strong>Service:</strong></p>
+      <p id="previewService"></p>
+      <h3>Total: $<span id="previewPrice"></span></h3>
+      <p><strong>Customer Signature:</strong></p>
+      <img id="previewSignature" />
+    </div>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
