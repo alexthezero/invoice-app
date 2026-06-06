@@ -147,7 +147,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function calculateTotal(services) {
-    return services.reduce((sum, service) => sum + Number(service.price || 0), 0);
+    return services.reduce((sum, service) => {
+      return sum + Number(service.price || 0);
+    }, 0);
   }
 
   function updateTotalPreview() {
@@ -285,21 +287,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Invoice badge
     doc.setFillColor(255, 255, 255);
-    doc.roundedRect(164, 7, 40, 20, 3, 3, "F");
+    doc.roundedRect(162, 8, 42, 22, 3, 3, "F");
 
     doc.setDrawColor(0, 168, 232);
     doc.setLineWidth(0.35);
-    doc.roundedRect(164, 7, 40, 20, 3, 3, "S");
+    doc.roundedRect(162, 8, 42, 22, 3, 3, "S");
 
     doc.setTextColor(90, 90, 90);
     doc.setFont(undefined, "normal");
     doc.setFontSize(6.5);
-    doc.text("Invoice #", 170, 14);
+    doc.text("Invoice #", 168, 15);
 
     doc.setTextColor(0, 64, 115);
     doc.setFont(undefined, "bold");
     doc.setFontSize(8.5);
-    doc.text(`INV-${invoice.invoiceNumber}`, 170, 22);
+    doc.text(`INV-${invoice.invoiceNumber}`, 168, 24);
 
     // Invoice title
     doc.setFontSize(24);
@@ -318,10 +320,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // Left service card
+    // Service card
     const serviceCardX = 10;
     const serviceCardY = 85;
-    const serviceCardW = 95;
+    const serviceCardW = 105;
     const serviceCardH = 70;
 
     doc.setFillColor(255, 255, 255);
@@ -338,10 +340,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     doc.setFontSize(8);
     doc.text("Description", serviceCardX + 5, serviceCardY + 22);
-    doc.text("Charge", serviceCardX + 70, serviceCardY + 22);
+    doc.text("Charge", serviceCardX + 78, serviceCardY + 22);
 
     doc.setDrawColor(210, 210, 210);
-    doc.line(serviceCardX + 5, serviceCardY + 26, serviceCardX + 90, serviceCardY + 26);
+    doc.line(serviceCardX + 5, serviceCardY + 26, serviceCardX + 100, serviceCardY + 26);
 
     doc.setTextColor(0, 0, 0);
     doc.setFont(undefined, "normal");
@@ -352,9 +354,9 @@ document.addEventListener("DOMContentLoaded", () => {
     invoice.services.forEach((service) => {
       if (y > serviceCardY + 47) return;
 
-      const lines = doc.splitTextToSize(service.description || "", 55);
+      const lines = doc.splitTextToSize(service.description || "", 66);
       doc.text(lines, serviceCardX + 5, y);
-      doc.text(`$${Number(service.price || 0).toFixed(2)}`, serviceCardX + 70, y);
+      doc.text(`$${Number(service.price || 0).toFixed(2)}`, serviceCardX + 78, y);
 
       y += Math.max(6, lines.length * 4.5);
     });
@@ -377,21 +379,21 @@ document.addEventListener("DOMContentLoaded", () => {
       doc.setFillColor(190, 0, 0);
     }
 
-    doc.roundedRect(serviceCardX + 62, serviceCardY + 55, 28, 8, 2, 2, "F");
+    doc.roundedRect(serviceCardX + 72, serviceCardY + 55, 28, 8, 2, 2, "F");
 
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(5.8);
 
     if (status === "PAID") {
-      doc.text(status, serviceCardX + 70, serviceCardY + 60.5);
+      doc.text(status, serviceCardX + 80, serviceCardY + 60.5);
     } else {
-      doc.text(status, serviceCardX + 66, serviceCardY + 60.5);
+      doc.text(status, serviceCardX + 76, serviceCardY + 60.5);
     }
 
-    // Right customer card
-    const customerCardX = 115;
+    // Customer card
+    const customerCardX = 122;
     const customerCardY = 85;
-    const customerCardW = 85;
+    const customerCardW = 78;
     const customerCardH = 70;
 
     doc.setFillColor(255, 255, 255);
@@ -416,14 +418,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     doc.setTextColor(0, 0, 0);
     doc.setFont(undefined, "normal");
-    doc.setFontSize(8.5);
-    doc.text(doc.splitTextToSize(invoice.customerName || "", 53), customerCardX + 30, customerCardY + 24);
-    doc.text(doc.splitTextToSize(invoice.customerAddress || "", 50), customerCardX + 30, customerCardY + 36);
-    doc.text(invoice.customerPhone || "", customerCardX + 30, customerCardY + 48);
-    doc.text(invoice.date || "", customerCardX + 30, customerCardY + 60);
+    doc.setFontSize(8.2);
+    doc.text(doc.splitTextToSize(invoice.customerName || "", 43), customerCardX + 29, customerCardY + 24);
+    doc.text(doc.splitTextToSize(invoice.customerAddress || "", 41), customerCardX + 29, customerCardY + 36);
+    doc.text(invoice.customerPhone || "", customerCardX + 29, customerCardY + 48);
+    doc.text(invoice.date || "", customerCardX + 29, customerCardY + 60);
 
-    // Signature section moved up
-    const signatureY = 195;
+    // Signature section
+    const signatureY = 185;
 
     doc.setTextColor(0, 0, 0);
     doc.setFont(undefined, "bold");
