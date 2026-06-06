@@ -46,6 +46,10 @@ h2 {
   margin-top: 30px;
 }
 
+h3 {
+  margin-top: 22px;
+}
+
 input,
 textarea,
 select {
@@ -59,7 +63,29 @@ select {
 }
 
 textarea {
-  min-height: 110px;
+  min-height: 80px;
+}
+
+.service-row {
+  background: #f5fbff;
+  border: 1px solid #b8d8ea;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.remove-service {
+  background: #b00020;
+}
+
+.total-preview {
+  background: #003f73;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 16px;
+  border-radius: 12px;
+  margin: 14px 0;
 }
 
 .status-label {
@@ -78,6 +104,10 @@ button {
   color: white;
   font-size: 16px;
   font-weight: bold;
+}
+
+#addServiceButton {
+  background: #005f99;
 }
 
 #clearSignature {
