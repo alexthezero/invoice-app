@@ -7,6 +7,7 @@ invoiceDate.valueAsDate = new Date();
 
 let drawing = false;
 let invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+let currentInvoice = null;
 
 function setupCanvas() {
   const ratio = Math.max(window.devicePixelRatio || 1, 1);
@@ -70,15 +71,17 @@ document.getElementById("clearSignature").addEventListener("click", () => {
   setupCanvas();
 });
 
-function updatePreview(invoice) {
-  document.getElementById("previewCompany").textContent = invoice.companyName;
-  document.getElementById("previewDate").textContent = invoice.date;
-  document.getElementById("previewCustomer").textContent = invoice.customerName;
-  document.getElementById("previewAddress").textContent = invoice.customerAddress;
-  document.getElementById("previewPhone").textContent = invoice.customerPhone;
-  document.getElementById("previewService").textContent = invoice.serviceDescription;
-  document.getElementById("previewPrice").textContent = Number(invoice.price).toFixed(2);
-  document.getElementById("previewSignature").src = invoice.signature;
+function getInvoiceFromForm() {
+  return {
+    companyName: document.getElementById("companyName").value,
+    customerName: document.getElementById("customerName").value,
+    customerAddress: document.getElementById("customerAddress").value,
+    customerPhone: document.getElementById("customerPhone").value,
+    date: document.getElementById("invoiceDate").value,
+    serviceDescription: document.getElementById("serviceDescription").value,
+    price: document.getElementById("price").value,
+    signature: canvas.toDataURL("image/png")
+  };
 }
 
 function renderInvoices() {
@@ -88,19 +91,32 @@ function renderInvoices() {
   invoices.forEach((invoice, index) => {
     const div = document.createElement("div");
     div.className = "saved-invoice";
+
     div.innerHTML = `
       <strong>${invoice.customerName}</strong><br>
       ${invoice.date}<br>
-      $${Number(invoice.price).toFixed(2)}<br><br>
-      <button onclick="loadInvoice(${index})">View</button>
+      $${Number(invoice.price || 0).toFixed(2)}<br><br>
+      <button onclick="loadInvoice(${index})">Load Invoice</button>
       <button onclick="deleteInvoice(${index})">Delete</button>
     `;
+
     list.appendChild(div);
   });
 }
 
 window.loadInvoice = function(index) {
-  updatePreview(invoices[index]);
+  const invoice = invoices[index];
+  currentInvoice = invoice;
+
+  document.getElementById("companyName").value = invoice.companyName;
+  document.getElementById("customerName").value = invoice.customerName;
+  document.getElementById("customerAddress").value = invoice.customerAddress;
+  document.getElementById("customerPhone").value = invoice.customerPhone;
+  document.getElementById("invoiceDate").value = invoice.date;
+  document.getElementById("serviceDescription").value = invoice.serviceDescription;
+  document.getElementById("price").value = invoice.price;
+
+  alert("Invoice loaded. You can now download it as PDF.");
 };
 
 window.deleteInvoice = function(index) {
@@ -114,56 +130,65 @@ window.deleteInvoice = function(index) {
 form.addEventListener("submit", (e) => {
   e.preventDefault();
 
-  const invoice = {
-    companyName: document.getElementById("companyName").value,
-    customerName: document.getElementById("customerName").value,
-    customerAddress: document.getElementById("customerAddress").value,
-    customerPhone: document.getElementById("customerPhone").value,
-    date: document.getElementById("invoiceDate").value,
-    serviceDescription: document.getElementById("serviceDescription").value,
-    price: document.getElementById("price").value,
-    signature: canvas.toDataURL("image/png")
-  };
+  const invoice = getInvoiceFromForm();
 
   invoices.push(invoice);
   localStorage.setItem("invoices", JSON.stringify(invoices));
 
-  updatePreview(invoice);
+  currentInvoice = invoice;
+
   renderInvoices();
 
   alert("Invoice saved locally on this device.");
 });
 
 document.getElementById("downloadPdf").addEventListener("click", () => {
-  if (typeof html2pdf === "undefined") {
+  if (!window.jspdf) {
     alert("PDF tool did not load. Refresh the page and try again.");
     return;
   }
 
-  const preview = document.getElementById("invoicePreview");
+  const { jsPDF } = window.jspdf;
+  const invoice = getInvoiceFromForm();
 
-  const options = {
-    margin: 0.5,
-    filename: "invoice.pdf",
-    image: { type: "jpeg", quality: 0.98 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true
-    },
-    jsPDF: {
-      unit: "in",
-      format: "letter",
-      orientation: "portrait"
-    }
-  };
+  const doc = new jsPDF();
 
-  html2pdf()
-    .set(options)
-    .from(preview)
-    .save()
-    .catch(() => {
-      alert("PDF failed to generate. Save the invoice first, then try again.");
-    });
+  doc.setFontSize(22);
+  doc.text(invoice.companyName || "Invoice", 20, 20);
+
+  doc.setFontSize(16);
+  doc.text("Invoice", 20, 35);
+
+  doc.setFontSize(12);
+  doc.text(`Date: ${invoice.date || ""}`, 20, 50);
+  doc.text(`Customer: ${invoice.customerName || ""}`, 20, 60);
+  doc.text(`Address: ${invoice.customerAddress || ""}`, 20, 70);
+  doc.text(`Phone: ${invoice.customerPhone || ""}`, 20, 80);
+
+  doc.line(20, 90, 190, 90);
+
+  doc.text("Service Description:", 20, 105);
+
+  const serviceLines = doc.splitTextToSize(invoice.serviceDescription || "", 170);
+  doc.text(serviceLines, 20, 115);
+
+  doc.setFontSize(16);
+  doc.text(`Total: $${Number(invoice.price || 0).toFixed(2)}`, 20, 145);
+
+  doc.setFontSize(12);
+  doc.text("Customer Signature:", 20, 165);
+
+  try {
+    doc.addImage(invoice.signature, "PNG", 20, 170, 80, 35);
+  } catch (error) {
+    console.log("Signature could not be added.");
+  }
+
+  const safeName = invoice.customerName
+    ? invoice.customerName.replace(/[^a-z0-9]/gi, "_").toLowerCase()
+    : "customer";
+
+  doc.save(`invoice-${safeName}.pdf`);
 });
 
 renderInvoices();
