@@ -287,12 +287,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Invoice number top right
     doc.setFillColor(255, 255, 255);
-    doc.roundedRect(166, 5, 38, 16, 2, 2, "F");
+    doc.roundedRect(164, 5, 40, 18, 3, 3, "F");
+
+    doc.setDrawColor(0, 168, 232);
+    doc.setLineWidth(0.35);
+    doc.roundedRect(164, 5, 40, 18, 3, 3, "S");
 
     doc.setTextColor(0, 64, 115);
     doc.setFont(undefined, "bold");
-    doc.setFontSize(10);
-    doc.text(`INV-${invoice.invoiceNumber}`, 170, 15);
+    doc.setFontSize(8.5);
+    doc.text(`INV-${invoice.invoiceNumber}`, 170, 16);
 
     // Invoice title
     doc.setFontSize(24);
@@ -319,8 +323,8 @@ document.addEventListener("DOMContentLoaded", () => {
     doc.setFillColor(255, 255, 255);
     doc.roundedRect(serviceCardX, serviceCardY, serviceCardW, serviceCardH, 5, 5, "F");
 
-    doc.setDrawColor(0, 168, 232);
-    doc.setLineWidth(0.7);
+    doc.setDrawColor(0, 120, 190);
+    doc.setLineWidth(0.45);
     doc.roundedRect(serviceCardX, serviceCardY, serviceCardW, serviceCardH, 5, 5, "S");
 
     doc.setTextColor(0, 64, 115);
@@ -366,11 +370,16 @@ document.addEventListener("DOMContentLoaded", () => {
       doc.setFillColor(190, 0, 0);
     }
 
-    doc.roundedRect(serviceCardX + 62, serviceCardY + 67, 27, 10, 2, 2, "F");
+    doc.roundedRect(serviceCardX + 60, serviceCardY + 66, 30, 11, 2, 2, "F");
 
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(7);
-    doc.text(status, serviceCardX + 67, serviceCardY + 74);
+    doc.setFontSize(6.5);
+
+    if (status === "PAID") {
+      doc.text(status, serviceCardX + 69, serviceCardY + 73.5);
+    } else {
+      doc.text(status, serviceCardX + 65.5, serviceCardY + 73.5);
+    }
 
     // Right customer card
     const customerCardX = 115;
@@ -381,8 +390,8 @@ document.addEventListener("DOMContentLoaded", () => {
     doc.setFillColor(255, 255, 255);
     doc.roundedRect(customerCardX, customerCardY, customerCardW, customerCardH, 5, 5, "F");
 
-    doc.setDrawColor(0, 168, 232);
-    doc.setLineWidth(0.7);
+    doc.setDrawColor(0, 120, 190);
+    doc.setLineWidth(0.45);
     doc.roundedRect(customerCardX, customerCardY, customerCardW, customerCardH, 5, 5, "S");
 
     doc.setTextColor(0, 64, 115);
