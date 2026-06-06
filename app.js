@@ -198,7 +198,6 @@ async function createPdf(invoice) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  // Header
   doc.setFillColor(0, 64, 115);
   doc.rect(0, 0, 210, 50, "F");
 
@@ -218,7 +217,6 @@ async function createPdf(invoice) {
   doc.text("Professional Pressure Washing Services", 78, 28);
   doc.text("Palm Coast, Florida", 78, 36);
 
-  // Invoice badge
   doc.setFillColor(255, 255, 255);
   doc.roundedRect(160, 10, 35, 18, 3, 3, "F");
 
@@ -235,23 +233,20 @@ async function createPdf(invoice) {
   doc.setFontSize(8);
   doc.text(invoice.paymentStatus || "UNPAID", 163, 24);
 
-  // Invoice title
   doc.setFontSize(22);
   doc.setTextColor(0, 64, 115);
   doc.text("INVOICE", 20, 62);
 
-  // Watermark
   if (logoImage) {
     try {
       doc.setGState(new doc.GState({ opacity: 0.04 }));
-      doc.addImage(logoImage, "PNG", 30, 82, 150, 110);
+      doc.addImage(logoImage, "PNG", 30, 95, 150, 110);
       doc.setGState(new doc.GState({ opacity: 1 }));
     } catch (error) {
       console.log("Watermark logo could not be added.");
     }
   }
 
-  // Customer section
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(16);
   doc.text("Customer Information", 20, 78);
@@ -265,7 +260,6 @@ async function createPdf(invoice) {
   doc.text(`Address: ${invoice.customerAddress || ""}`, 20, 116);
   doc.text(`Phone: ${invoice.customerPhone || ""}`, 20, 126);
 
-  // Service section
   doc.setFontSize(16);
   doc.text("Service Details", 20, 144);
 
@@ -284,10 +278,9 @@ async function createPdf(invoice) {
   doc.setFontSize(12);
 
   const serviceLines = doc.splitTextToSize(invoice.serviceDescription || "", 125);
-  doc.text(serviceLines, 20, 176);
-  doc.text(`$${Number(invoice.price || 0).toFixed(2)}`, 160, 176);
+  doc.text(serviceLines, 20, 172);
+  doc.text(`$${Number(invoice.price || 0).toFixed(2)}`, 160, 172);
 
-  // Total box
   doc.setFillColor(0, 64, 115);
   doc.roundedRect(20, 198, 170, 25, 3, 3, "F");
 
@@ -301,7 +294,6 @@ async function createPdf(invoice) {
     doc.text("PAID", 135, 215);
   }
 
-  // Signature
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(12);
   doc.text("Customer Authorization:", 20, 236);
