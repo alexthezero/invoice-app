@@ -3,21 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <title>IronNest Pressure Washing Invoice App</title>
 
-  <link rel="stylesheet" href="style.css?v=18" />
+  <link rel="stylesheet" href="style.css?v=19" />
   <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 
 <body>
   <div class="app">
     <div class="brand-header">
-      <img
-        src="./BAB89AB6-21E7-4651-B1DD-469BD6682619.png?v=1"
-        alt="IronNest Pressure Washing Logo"
-      />
-
+      <img src="./BAB89AB6-21E7-4651-B1DD-469BD6682619.png?v=1" alt="IronNest Logo" />
       <h1>IronNest Pressure Washing</h1>
       <p>Professional Pressure Washing Services</p>
     </div>
@@ -29,12 +24,9 @@
       <input id="invoiceDate" type="date" />
 
       <h3>Services</h3>
-
       <div id="servicesContainer"></div>
 
-      <button type="button" id="addServiceButton">
-        + Add Service
-      </button>
+      <button type="button" id="addServiceButton">+ Add Service</button>
 
       <div class="total-preview">
         Total Due: $<span id="totalPreview">0.00</span>
@@ -58,6 +50,6 @@
     <div id="invoiceList"></div>
   </div>
 
-  <script src="app.js?v=18"></script>
+  <script src="app.js?v=19"></script>
 </body>
 </html>
