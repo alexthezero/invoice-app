@@ -1,475 +1,289 @@
-const form = document.getElementById("invoiceForm");
-const canvas = document.getElementById("signaturePad");
-const ctx = canvas.getContext("2d");
-const servicesContainer = document.getElementById("servicesContainer");
-const totalPreview = document.getElementById("totalPreview");
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("invoiceForm");
+  const canvas = document.getElementById("signaturePad");
+  const ctx = canvas.getContext("2d");
+  const servicesContainer = document.getElementById("servicesContainer");
+  const totalPreview = document.getElementById("totalPreview");
 
-const logoPath = "./BAB89AB6-21E7-4651-B1DD-469BD6682619.png?v=1";
+  document.getElementById("invoiceDate").valueAsDate = new Date();
 
-document.getElementById("invoiceDate").valueAsDate = new Date();
+  let drawing = false;
+  let invoices = JSON.parse(localStorage.getItem("invoices")) || [];
 
-let drawing = false;
-let invoices = JSON.parse(localStorage.getItem("invoices")) || [];
-let logoImage = null;
+  function setupCanvas() {
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    const rect = canvas.getBoundingClientRect();
 
-function loadLogo() {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
 
-    img.onload = function () {
-      const logoCanvas = document.createElement("canvas");
-      logoCanvas.width = img.width;
-      logoCanvas.height = img.height;
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#000";
+  }
 
-      const logoCtx = logoCanvas.getContext("2d");
-      logoCtx.drawImage(img, 0, 0);
+  setTimeout(setupCanvas, 300);
+  window.addEventListener("resize", setupCanvas);
 
-      logoImage = logoCanvas.toDataURL("image/png");
-      resolve();
+  function getPosition(e) {
+    const rect = canvas.getBoundingClientRect();
+    const point = e.touches ? e.touches[0] : e;
+
+    return {
+      x: point.clientX - rect.left,
+      y: point.clientY - rect.top
     };
+  }
 
-    img.onerror = function () {
-      console.log("Logo failed to load.");
-      resolve();
-    };
+  function startDrawing(e) {
+    e.preventDefault();
+    drawing = true;
+    const pos = getPosition(e);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+  }
 
-    img.src = logoPath;
+  function draw(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const pos = getPosition(e);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+  }
+
+  function stopDrawing(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    drawing = false;
+  }
+
+  canvas.addEventListener("pointerdown", startDrawing, { passive: false });
+  canvas.addEventListener("pointermove", draw, { passive: false });
+  canvas.addEventListener("pointerup", stopDrawing, { passive: false });
+  canvas.addEventListener("pointercancel", stopDrawing, { passive: false });
+  canvas.addEventListener("pointerleave", stopDrawing, { passive: false });
+
+  document.getElementById("clearSignature").addEventListener("click", () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setupCanvas();
   });
-}
 
-loadLogo();
+  function addServiceRow(description = "", price = "") {
+    const row = document.createElement("div");
+    row.className = "service-row";
 
-function setupCanvas() {
-  const ratio = Math.max(window.devicePixelRatio || 1, 1);
-  const rect = canvas.getBoundingClientRect();
+    row.innerHTML = `
+      <textarea class="service-description" placeholder="Service Description" required>${description}</textarea>
+      <input class="service-price" type="number" step="0.01" placeholder="Price" value="${price}" required />
+      <button type="button" class="remove-service">Remove Service</button>
+    `;
 
-  canvas.width = rect.width * ratio;
-  canvas.height = rect.height * ratio;
+    servicesContainer.appendChild(row);
 
-  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-  ctx.lineWidth = 3;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.strokeStyle = "#000";
-}
+    const priceInput = row.querySelector(".service-price");
+    const descInput = row.querySelector(".service-description");
+    const removeButton = row.querySelector(".remove-service");
 
-setTimeout(setupCanvas, 300);
-window.addEventListener("resize", setupCanvas);
+    priceInput.addEventListener("input", updateTotalPreview);
+    descInput.addEventListener("input", updateTotalPreview);
 
-function getPosition(e) {
-  const rect = canvas.getBoundingClientRect();
-  const point = e.touches ? e.touches[0] : e;
+    removeButton.addEventListener("click", () => {
+      if (document.querySelectorAll(".service-row").length === 1) {
+        alert("At least one service is required.");
+        return;
+      }
 
-  return {
-    x: point.clientX - rect.left,
-    y: point.clientY - rect.top
+      row.remove();
+      updateTotalPreview();
+    });
+
+    updateTotalPreview();
+  }
+
+  document.getElementById("addServiceButton").addEventListener("click", () => {
+    addServiceRow();
+  });
+
+  function getServicesFromForm() {
+    const rows = document.querySelectorAll(".service-row");
+    const services = [];
+
+    rows.forEach((row) => {
+      const description = row.querySelector(".service-description").value.trim();
+      const price = Number(row.querySelector(".service-price").value || 0);
+
+      if (description || price > 0) {
+        services.push({ description, price });
+      }
+    });
+
+    return services;
+  }
+
+  function calculateTotal(services) {
+    return services.reduce((sum, service) => sum + Number(service.price || 0), 0);
+  }
+
+  function updateTotalPreview() {
+    const services = getServicesFromForm();
+    totalPreview.textContent = calculateTotal(services).toFixed(2);
+  }
+
+  function getNextInvoiceNumber() {
+    const lastNumber = Number(localStorage.getItem("lastInvoiceNumber")) || 1000;
+    const nextNumber = lastNumber + 1;
+    localStorage.setItem("lastInvoiceNumber", nextNumber);
+    return nextNumber;
+  }
+
+  function getInvoiceFromForm(existingNumber = null) {
+    const services = getServicesFromForm();
+
+    return {
+      invoiceNumber: existingNumber || getNextInvoiceNumber(),
+      customerName: document.getElementById("customerName").value,
+      customerAddress: document.getElementById("customerAddress").value,
+      customerPhone: document.getElementById("customerPhone").value,
+      date: document.getElementById("invoiceDate").value,
+      services,
+      total: calculateTotal(services),
+      paymentStatus: document.getElementById("paymentStatus").value,
+      signature: canvas.toDataURL("image/png")
+    };
+  }
+
+  function renderInvoices() {
+    const list = document.getElementById("invoiceList");
+    list.innerHTML = "";
+
+    invoices.forEach((invoice, index) => {
+      const div = document.createElement("div");
+      div.className = "saved-invoice";
+
+      div.innerHTML = `
+        <strong>${invoice.customerName}</strong><br>
+        Invoice #${invoice.invoiceNumber}<br>
+        ${invoice.date}<br>
+        $${Number(invoice.total || 0).toFixed(2)} - ${invoice.paymentStatus || "UNPAID"}<br><br>
+        <button onclick="downloadSavedInvoice(${index})">Download PDF</button>
+        <button onclick="loadInvoice(${index})">Load Invoice</button>
+        <button onclick="deleteInvoice(${index})">Delete</button>
+      `;
+
+      list.appendChild(div);
+    });
+  }
+
+  window.loadInvoice = function(index) {
+    const invoice = invoices[index];
+
+    document.getElementById("customerName").value = invoice.customerName;
+    document.getElementById("customerAddress").value = invoice.customerAddress;
+    document.getElementById("customerPhone").value = invoice.customerPhone;
+    document.getElementById("invoiceDate").value = invoice.date;
+    document.getElementById("paymentStatus").value = invoice.paymentStatus || "UNPAID";
+
+    servicesContainer.innerHTML = "";
+
+    if (invoice.services && invoice.services.length > 0) {
+      invoice.services.forEach((service) => {
+        addServiceRow(service.description, service.price);
+      });
+    } else {
+      addServiceRow();
+    }
+
+    updateTotalPreview();
+    alert("Invoice loaded.");
   };
-}
 
-function startDrawing(e) {
-  e.preventDefault();
-  drawing = true;
+  window.deleteInvoice = function(index) {
+    if (!confirm("Delete this invoice?")) return;
+    invoices.splice(index, 1);
+    localStorage.setItem("invoices", JSON.stringify(invoices));
+    renderInvoices();
+  };
 
-  const pos = getPosition(e);
-  ctx.beginPath();
-  ctx.moveTo(pos.x, pos.y);
-}
+  function createPdf(invoice) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
 
-function draw(e) {
-  if (!drawing) return;
+    doc.setFontSize(22);
+    doc.text("IronNest Pressure Washing", 20, 20);
 
-  e.preventDefault();
+    doc.setFontSize(16);
+    doc.text(`Invoice #${invoice.invoiceNumber}`, 20, 35);
 
-  const pos = getPosition(e);
-  ctx.lineTo(pos.x, pos.y);
-  ctx.stroke();
-}
+    doc.setFontSize(12);
+    doc.text(`Date: ${invoice.date}`, 20, 50);
+    doc.text(`Customer: ${invoice.customerName}`, 20, 60);
+    doc.text(`Address: ${invoice.customerAddress}`, 20, 70);
+    doc.text(`Phone: ${invoice.customerPhone}`, 20, 80);
 
-function stopDrawing(e) {
-  if (!drawing) return;
+    doc.line(20, 90, 190, 90);
 
-  e.preventDefault();
-  drawing = false;
-}
+    doc.text("Services:", 20, 105);
 
-canvas.addEventListener("pointerdown", startDrawing, { passive: false });
-canvas.addEventListener("pointermove", draw, { passive: false });
-canvas.addEventListener("pointerup", stopDrawing, { passive: false });
-canvas.addEventListener("pointercancel", stopDrawing, { passive: false });
-canvas.addEventListener("pointerleave", stopDrawing, { passive: false });
+    let y = 118;
 
-canvas.addEventListener("touchstart", startDrawing, { passive: false });
-canvas.addEventListener("touchmove", draw, { passive: false });
-canvas.addEventListener("touchend", stopDrawing, { passive: false });
+    invoice.services.forEach((service) => {
+      doc.text(service.description || "", 20, y);
+      doc.text(`$${Number(service.price || 0).toFixed(2)}`, 160, y);
+      y += 10;
+    });
 
-document.getElementById("clearSignature").addEventListener("click", () => {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  setupCanvas();
-});
+    doc.setFontSize(16);
+    doc.text(`Total Due: $${Number(invoice.total || 0).toFixed(2)}`, 20, y + 15);
 
-function addServiceRow(description = "", price = "") {
-  const row = document.createElement("div");
-  row.className = "service-row";
+    doc.setFontSize(12);
+    doc.text(`Status: ${invoice.paymentStatus}`, 20, y + 30);
 
-  row.innerHTML = `
-    <textarea class="service-description" placeholder="Service Description" required>${description}</textarea>
-    <input class="service-price" type="number" step="0.01" placeholder="Price" value="${price}" required />
-    <button type="button" class="remove-service">Remove Service</button>
-  `;
+    try {
+      doc.text("Customer Signature:", 20, y + 50);
+      doc.addImage(invoice.signature, "PNG", 20, y + 55, 80, 35);
+    } catch (error) {}
 
-  servicesContainer.appendChild(row);
+    const safeName = invoice.customerName
+      ? invoice.customerName.replace(/[^a-z0-9]/gi, "_").toLowerCase()
+      : "customer";
 
-  row.querySelector(".service-price").addEventListener("input", updateTotalPreview);
-  row.querySelector(".service-description").addEventListener("input", updateTotalPreview);
+    doc.save(`IronNest-INV-${invoice.invoiceNumber}-${safeName}.pdf`);
+  }
 
-  row.querySelector(".remove-service").addEventListener("click", () => {
-    if (document.querySelectorAll(".service-row").length === 1) {
-      alert("At least one service is required.");
+  document.getElementById("downloadPdf").addEventListener("click", () => {
+    const invoice = getInvoiceFromForm();
+
+    if (invoice.services.length === 0) {
+      alert("Please add at least one service.");
       return;
     }
 
-    row.remove();
-    updateTotalPreview();
+    createPdf(invoice);
   });
 
-  updateTotalPreview();
-}
-
-document.getElementById("addServiceButton").addEventListener("click", () => {
-  addServiceRow();
-});
-
-function getServicesFromForm() {
-  const rows = document.querySelectorAll(".service-row");
-  const services = [];
-
-  rows.forEach((row) => {
-    const description = row.querySelector(".service-description").value.trim();
-    const price = Number(row.querySelector(".service-price").value || 0);
-
-    if (description || price > 0) {
-      services.push({
-        description,
-        price
-      });
-    }
-  });
-
-  return services;
-}
-
-function calculateTotal(services) {
-  return services.reduce((sum, service) => {
-    return sum + Number(service.price || 0);
-  }, 0);
-}
-
-function updateTotalPreview() {
-  const services = getServicesFromForm();
-  const total = calculateTotal(services);
-  totalPreview.textContent = total.toFixed(2);
-}
-
-function getNextInvoiceNumber() {
-  const lastNumber = Number(localStorage.getItem("lastInvoiceNumber")) || 1000;
-  const nextNumber = lastNumber + 1;
-  localStorage.setItem("lastInvoiceNumber", nextNumber);
-  return nextNumber;
-}
-
-function getInvoiceFromForm(existingNumber = null) {
-  const services = getServicesFromForm();
-
-  return {
-    invoiceNumber: existingNumber || getNextInvoiceNumber(),
-    companyName: "IronNest Pressure Washing",
-    customerName: document.getElementById("customerName").value,
-    customerAddress: document.getElementById("customerAddress").value,
-    customerPhone: document.getElementById("customerPhone").value,
-    date: document.getElementById("invoiceDate").value,
-    services,
-    total: calculateTotal(services),
-    paymentStatus: document.getElementById("paymentStatus").value,
-    signature: canvas.toDataURL("image/png")
+  window.downloadSavedInvoice = function(index) {
+    createPdf(invoices[index]);
   };
-}
 
-function renderInvoices() {
-  const list = document.getElementById("invoiceList");
-  list.innerHTML = "";
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
 
-  invoices.forEach((invoice, index) => {
-    const div = document.createElement("div");
-    div.className = "saved-invoice";
+    const invoice = getInvoiceFromForm();
 
-    const total = Number(invoice.total || 0).toFixed(2);
-
-    div.innerHTML = `
-      <strong>${invoice.customerName}</strong><br>
-      Invoice #${invoice.invoiceNumber}<br>
-      ${invoice.date}<br>
-      $${total} - ${invoice.paymentStatus || "UNPAID"}<br><br>
-      <button onclick="downloadSavedInvoice(${index})">Download PDF</button>
-      <button onclick="loadInvoice(${index})">Load Invoice</button>
-      <button onclick="deleteInvoice(${index})">Delete</button>
-    `;
-
-    list.appendChild(div);
-  });
-}
-
-window.loadInvoice = function(index) {
-  const invoice = invoices[index];
-
-  document.getElementById("customerName").value = invoice.customerName;
-  document.getElementById("customerAddress").value = invoice.customerAddress;
-  document.getElementById("customerPhone").value = invoice.customerPhone;
-  document.getElementById("invoiceDate").value = invoice.date;
-  document.getElementById("paymentStatus").value = invoice.paymentStatus || "UNPAID";
-
-  servicesContainer.innerHTML = "";
-
-  if (invoice.services && invoice.services.length > 0) {
-    invoice.services.forEach((service) => {
-      addServiceRow(service.description, service.price);
-    });
-  } else {
-    addServiceRow();
-  }
-
-  updateTotalPreview();
-
-  alert("Invoice loaded.");
-};
-
-window.deleteInvoice = function(index) {
-  if (!confirm("Delete this invoice?")) return;
-
-  invoices.splice(index, 1);
-  localStorage.setItem("invoices", JSON.stringify(invoices));
-  renderInvoices();
-};
-
-form.addEventListener("submit", (e) => {
-  e.preventDefault();
-
-  const invoice = getInvoiceFromForm();
-
-  if (invoice.services.length === 0) {
-    alert("Please add at least one service.");
-    return;
-  }
-
-  invoices.push(invoice);
-  localStorage.setItem("invoices", JSON.stringify(invoices));
-
-  renderInvoices();
-
-  alert("Invoice saved locally on this device.");
-});
-
-async function createPdf(invoice) {
-  if (!window.jspdf || !window.jspdf.jsPDF) {
-    alert("PDF tool did not load. Refresh the page and try again.");
-    return;
-  }
-
-  if (!logoImage) {
-    await loadLogo();
-  }
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  doc.setFillColor(0, 64, 115);
-  doc.rect(0, 0, 210, 55, "F");
-
-  if (logoImage) {
-    try {
-      doc.addImage(logoImage, "PNG", 6, 4, 72, 46);
-    } catch (error) {
-      console.log("Header logo could not be added.");
+    if (invoice.services.length === 0) {
+      alert("Please add at least one service.");
+      return;
     }
-  }
 
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(19);
-  doc.text("IronNest Pressure Washing", 82, 18);
+    invoices.push(invoice);
+    localStorage.setItem("invoices", JSON.stringify(invoices));
+    renderInvoices();
 
-  doc.setFontSize(10);
-  doc.text("Professional Pressure Washing Services", 82, 29);
-  doc.text("Palm Coast, Florida", 82, 39);
-
-  doc.setFontSize(24);
-  doc.setTextColor(0, 64, 115);
-  doc.text("INVOICE", 20, 72);
-
-  if (logoImage) {
-    try {
-      doc.setGState(new doc.GState({ opacity: 0.02 }));
-      doc.addImage(logoImage, "PNG", 30, 98, 150, 110);
-      doc.setGState(new doc.GState({ opacity: 1 }));
-    } catch (error) {
-      console.log("Watermark logo could not be added.");
-    }
-  }
-
-  doc.setTextColor(0, 0, 0);
-  doc.setFont(undefined, "normal");
-  doc.setFontSize(16);
-  doc.text("Customer Information", 20, 90);
-
-  doc.setDrawColor(0, 168, 232);
-  doc.line(20, 95, 190, 95);
-
-  doc.setFontSize(12);
-  doc.setFont(undefined, "bold");
-  doc.text("Date:", 20, 109);
-  doc.text("Customer:", 20, 121);
-  doc.text("Address:", 20, 133);
-  doc.text("Phone:", 20, 145);
-
-  doc.setFont(undefined, "normal");
-  doc.text(invoice.date || "", 48, 109);
-  doc.text(invoice.customerName || "", 48, 121);
-  doc.text(invoice.customerAddress || "", 48, 133);
-  doc.text(invoice.customerPhone || "", 48, 145);
-
-  doc.setFontSize(16);
-  doc.text("Service Details", 20, 162);
-
-  doc.setDrawColor(0, 168, 232);
-  doc.line(20, 167, 190, 167);
-
-  doc.setFontSize(11);
-  doc.setTextColor(0, 64, 115);
-  doc.setFont(undefined, "bold");
-  doc.text("Description", 20, 179);
-  doc.text("Amount", 160, 179);
-
-  doc.setDrawColor(150, 150, 150);
-  doc.line(20, 184, 190, 184);
-
-  doc.setTextColor(0, 0, 0);
-  doc.setFont(undefined, "normal");
-  doc.setFontSize(12);
-
-  let y = 196;
-
-  invoice.services.forEach((service) => {
-    const serviceLines = doc.splitTextToSize(service.description || "", 125);
-
-    doc.text(serviceLines, 20, y);
-    doc.text(`$${Number(service.price || 0).toFixed(2)}`, 160, y);
-
-    y += Math.max(10, serviceLines.length * 6 + 4);
+    alert("Invoice saved locally on this device.");
   });
 
-  doc.setDrawColor(220, 220, 220);
-  doc.line(20, y + 2, 190, y + 2);
-
-  const totalBoxY = Math.max(218, y + 12);
-
-  doc.setFillColor(0, 64, 115);
-  doc.roundedRect(20, totalBoxY, 170, 26, 3, 3, "F");
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(19);
-  doc.setFont(undefined, "bold");
-  doc.text(`Total Due: $${Number(invoice.total || 0).toFixed(2)}`, 26, totalBoxY + 17);
-
-  const signatureY = totalBoxY + 36;
-
-  doc.setTextColor(0, 0, 0);
-  doc.setFont(undefined, "bold");
-  doc.setFontSize(12);
-  doc.text("Customer Authorization:", 20, signatureY);
-
-  doc.setFont(undefined, "normal");
-
-  try {
-    doc.addImage(invoice.signature, "PNG", 20, signatureY + 4, 70, 28);
-  } catch (error) {
-    console.log("Signature could not be added.");
-  }
-
-  doc.setDrawColor(0, 0, 0);
-  doc.line(20, signatureY + 33, 105, signatureY + 33);
-
-  doc.setFontSize(8);
-  doc.setTextColor(80, 80, 80);
-  doc.text("Customer Signature", 20, signatureY + 39);
-
-  const cardX = 130;
-  const cardY = signatureY - 9;
-  const cardW = 60;
-  const cardH = 38;
-
-  doc.setFillColor(255, 255, 255);
-  doc.roundedRect(cardX, cardY, cardW, cardH, 3, 3, "F");
-
-  doc.setDrawColor(180, 180, 180);
-  doc.setLineWidth(0.4);
-  doc.roundedRect(cardX, cardY, cardW, cardH, 3, 3, "S");
-
-  doc.setFont(undefined, "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(100, 100, 100);
-  doc.text("PAYMENT STATUS", cardX + 14, cardY + 7);
-
-  doc.setDrawColor(0, 168, 232);
-  doc.setLineWidth(0.8);
-  doc.line(cardX + 8, cardY + 10, cardX + 23, cardY + 10);
-  doc.line(cardX + 37, cardY + 10, cardX + 52, cardY + 10);
-
-  doc.setTextColor(0, 64, 115);
-  doc.setFontSize(15);
-  doc.setFont(undefined, "bold");
-  doc.text(`INV-${invoice.invoiceNumber}`, cardX + 14, cardY + 22);
-
-  if ((invoice.paymentStatus || "").toUpperCase() === "PAID") {
-    doc.setTextColor(0, 150, 0);
-  } else {
-    doc.setTextColor(200, 0, 0);
-  }
-
-  doc.setFontSize(12);
-  doc.text(invoice.paymentStatus || "UNPAID", cardX + 20, cardY + 31);
-
-  doc.setDrawColor(0, 168, 232);
-  doc.setLineWidth(1.2);
-  doc.line(cardX, cardY + cardH, cardX + 26, cardY + cardH);
-  doc.line(cardX + 34, cardY + cardH, cardX + cardW, cardY + cardH);
-  doc.line(cardX + 26, cardY + cardH, cardX + 30, cardY + cardH + 3);
-  doc.line(cardX + 34, cardY + cardH, cardX + 30, cardY + cardH + 3);
-
-  doc.setFont(undefined, "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(80, 80, 80);
-  doc.text("Generated by IronNest Invoice System", 120, signatureY + 39);
-
-  const safeName = invoice.customerName
-    ? invoice.customerName.replace(/[^a-z0-9]/gi, "_").toLowerCase()
-    : "customer";
-
-  doc.save(`IronNest-INV-${invoice.invoiceNumber}-${safeName}.pdf`);
-}
-
-document.getElementById("downloadPdf").addEventListener("click", () => {
-  const invoice = getInvoiceFromForm();
-
-  if (invoice.services.length === 0) {
-    alert("Please add at least one service.");
-    return;
-  }
-
-  createPdf(invoice);
+  addServiceRow();
+  renderInvoices();
 });
-
-window.downloadSavedInvoice = function(index) {
-  createPdf(invoices[index]);
-};
-
-addServiceRow();
-renderInvoices();
