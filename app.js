@@ -104,6 +104,7 @@ window.loadInvoice = function(index) {
 
 window.deleteInvoice = function(index) {
   if (!confirm("Delete this invoice?")) return;
+
   invoices.splice(index, 1);
   localStorage.setItem("invoices", JSON.stringify(invoices));
   renderInvoices();
@@ -120,7 +121,7 @@ form.addEventListener("submit", (e) => {
     date: document.getElementById("invoiceDate").value,
     serviceDescription: document.getElementById("serviceDescription").value,
     price: document.getElementById("price").value,
-    signature: canvas.toDataURL()
+    signature: canvas.toDataURL("image/png")
   };
 
   invoices.push(invoice);
@@ -133,17 +134,35 @@ form.addEventListener("submit", (e) => {
 });
 
 document.getElementById("downloadPdf").addEventListener("click", () => {
+  if (typeof html2pdf === "undefined") {
+    alert("PDF tool did not load. Refresh the page and try again.");
+    return;
+  }
+
   const preview = document.getElementById("invoicePreview");
 
   const options = {
     margin: 0.5,
     filename: "invoice.pdf",
     image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
+    html2canvas: {
+      scale: 2,
+      useCORS: true
+    },
+    jsPDF: {
+      unit: "in",
+      format: "letter",
+      orientation: "portrait"
+    }
   };
 
-  html2pdf().set(options).from(preview).save();
+  html2pdf()
+    .set(options)
+    .from(preview)
+    .save()
+    .catch(() => {
+      alert("PDF failed to generate. Save the invoice first, then try again.");
+    });
 });
 
 renderInvoices();
