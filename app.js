@@ -5,10 +5,41 @@ document.addEventListener("DOMContentLoaded", () => {
   const servicesContainer = document.getElementById("servicesContainer");
   const totalPreview = document.getElementById("totalPreview");
 
+  const logoPath = "./BAB89AB6-21E7-4651-B1DD-469BD6682619.png?v=1";
+
   document.getElementById("invoiceDate").valueAsDate = new Date();
 
   let drawing = false;
   let invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+  let logoImage = null;
+
+  function loadLogo() {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+
+      img.onload = function () {
+        const logoCanvas = document.createElement("canvas");
+        logoCanvas.width = img.width;
+        logoCanvas.height = img.height;
+
+        const logoCtx = logoCanvas.getContext("2d");
+        logoCtx.drawImage(img, 0, 0);
+
+        logoImage = logoCanvas.toDataURL("image/png");
+        resolve();
+      };
+
+      img.onerror = function () {
+        console.log("Logo failed to load.");
+        resolve();
+      };
+
+      img.src = logoPath;
+    });
+  }
+
+  loadLogo();
 
   function setupCanvas() {
     const ratio = Math.max(window.devicePixelRatio || 1, 1);
@@ -40,6 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function startDrawing(e) {
     e.preventDefault();
     drawing = true;
+
     const pos = getPosition(e);
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
@@ -47,7 +79,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function draw(e) {
     if (!drawing) return;
+
     e.preventDefault();
+
     const pos = getPosition(e);
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
@@ -55,6 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function stopDrawing(e) {
     if (!drawing) return;
+
     e.preventDefault();
     drawing = false;
   }
@@ -82,14 +117,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     servicesContainer.appendChild(row);
 
-    const priceInput = row.querySelector(".service-price");
-    const descInput = row.querySelector(".service-description");
-    const removeButton = row.querySelector(".remove-service");
+    row.querySelector(".service-price").addEventListener("input", updateTotalPreview);
+    row.querySelector(".service-description").addEventListener("input", updateTotalPreview);
 
-    priceInput.addEventListener("input", updateTotalPreview);
-    descInput.addEventListener("input", updateTotalPreview);
-
-    removeButton.addEventListener("click", () => {
+    row.querySelector(".remove-service").addEventListener("click", () => {
       if (document.querySelectorAll(".service-row").length === 1) {
         alert("At least one service is required.");
         return;
@@ -123,7 +154,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function calculateTotal(services) {
-    return services.reduce((sum, service) => sum + Number(service.price || 0), 0);
+    return services.reduce((sum, service) => {
+      return sum + Number(service.price || 0);
+    }, 0);
   }
 
   function updateTotalPreview() {
@@ -201,49 +234,208 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.deleteInvoice = function(index) {
     if (!confirm("Delete this invoice?")) return;
+
     invoices.splice(index, 1);
     localStorage.setItem("invoices", JSON.stringify(invoices));
     renderInvoices();
   };
 
-  function createPdf(invoice) {
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    const invoice = getInvoiceFromForm();
+
+    if (invoice.services.length === 0) {
+      alert("Please add at least one service.");
+      return;
+    }
+
+    invoices.push(invoice);
+    localStorage.setItem("invoices", JSON.stringify(invoices));
+    renderInvoices();
+
+    alert("Invoice saved locally on this device.");
+  });
+
+  async function createPdf(invoice) {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      alert("PDF tool did not load. Refresh the page and try again.");
+      return;
+    }
+
+    if (!logoImage) {
+      await loadLogo();
+    }
+
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
-    doc.setFontSize(22);
-    doc.text("IronNest Pressure Washing", 20, 20);
+    doc.setFillColor(0, 64, 115);
+    doc.rect(0, 0, 210, 55, "F");
 
+    if (logoImage) {
+      try {
+        doc.addImage(logoImage, "PNG", 6, 4, 72, 46);
+      } catch (error) {
+        console.log("Header logo could not be added.");
+      }
+    }
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(19);
+    doc.text("IronNest Pressure Washing", 82, 18);
+
+    doc.setFontSize(10);
+    doc.text("Professional Pressure Washing Services", 82, 29);
+    doc.text("Palm Coast, Florida", 82, 39);
+
+    doc.setFontSize(24);
+    doc.setTextColor(0, 64, 115);
+    doc.text("INVOICE", 20, 72);
+
+    if (logoImage) {
+      try {
+        doc.setGState(new doc.GState({ opacity: 0.02 }));
+        doc.addImage(logoImage, "PNG", 30, 98, 150, 110);
+        doc.setGState(new doc.GState({ opacity: 1 }));
+      } catch (error) {
+        console.log("Watermark logo could not be added.");
+      }
+    }
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, "normal");
     doc.setFontSize(16);
-    doc.text(`Invoice #${invoice.invoiceNumber}`, 20, 35);
+    doc.text("Customer Information", 20, 90);
+
+    doc.setDrawColor(0, 168, 232);
+    doc.line(20, 95, 190, 95);
 
     doc.setFontSize(12);
-    doc.text(`Date: ${invoice.date}`, 20, 50);
-    doc.text(`Customer: ${invoice.customerName}`, 20, 60);
-    doc.text(`Address: ${invoice.customerAddress}`, 20, 70);
-    doc.text(`Phone: ${invoice.customerPhone}`, 20, 80);
+    doc.setFont(undefined, "bold");
+    doc.text("Date:", 20, 109);
+    doc.text("Customer:", 20, 121);
+    doc.text("Address:", 20, 133);
+    doc.text("Phone:", 20, 145);
 
-    doc.line(20, 90, 190, 90);
+    doc.setFont(undefined, "normal");
+    doc.text(invoice.date || "", 48, 109);
+    doc.text(invoice.customerName || "", 48, 121);
+    doc.text(invoice.customerAddress || "", 48, 133);
+    doc.text(invoice.customerPhone || "", 48, 145);
 
-    doc.text("Services:", 20, 105);
+    doc.setFontSize(16);
+    doc.text("Service Details", 20, 162);
 
-    let y = 118;
+    doc.setDrawColor(0, 168, 232);
+    doc.line(20, 167, 190, 167);
+
+    doc.setFontSize(11);
+    doc.setTextColor(0, 64, 115);
+    doc.setFont(undefined, "bold");
+    doc.text("Description", 20, 179);
+    doc.text("Amount", 160, 179);
+
+    doc.setDrawColor(150, 150, 150);
+    doc.line(20, 184, 190, 184);
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(12);
+
+    let y = 196;
 
     invoice.services.forEach((service) => {
-      doc.text(service.description || "", 20, y);
+      const serviceLines = doc.splitTextToSize(service.description || "", 125);
+
+      doc.text(serviceLines, 20, y);
       doc.text(`$${Number(service.price || 0).toFixed(2)}`, 160, y);
-      y += 10;
+
+      y += Math.max(8, serviceLines.length * 5 + 3);
     });
 
-    doc.setFontSize(16);
-    doc.text(`Total Due: $${Number(invoice.total || 0).toFixed(2)}`, 20, y + 15);
+    doc.setDrawColor(220, 220, 220);
+    doc.line(20, y + 2, 190, y + 2);
 
+    const totalBoxY = Math.min(210, Math.max(205, y + 8));
+
+    doc.setFillColor(0, 64, 115);
+    doc.roundedRect(20, totalBoxY, 170, 24, 3, 3, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont(undefined, "bold");
+    doc.text(`Total Due: $${Number(invoice.total || 0).toFixed(2)}`, 26, totalBoxY + 16);
+
+    const signatureY = totalBoxY + 32;
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, "bold");
     doc.setFontSize(12);
-    doc.text(`Status: ${invoice.paymentStatus}`, 20, y + 30);
+    doc.text("Customer Authorization:", 20, signatureY);
+
+    doc.setFont(undefined, "normal");
 
     try {
-      doc.text("Customer Signature:", 20, y + 50);
-      doc.addImage(invoice.signature, "PNG", 20, y + 55, 80, 35);
-    } catch (error) {}
+      doc.addImage(invoice.signature, "PNG", 20, signatureY + 4, 60, 22);
+    } catch (error) {
+      console.log("Signature could not be added.");
+    }
+
+    doc.setDrawColor(0, 0, 0);
+    doc.line(20, signatureY + 28, 95, signatureY + 28);
+
+    doc.setFontSize(8);
+    doc.setTextColor(80, 80, 80);
+    doc.text("Customer Signature", 20, signatureY + 34);
+
+    const cardX = 130;
+    const cardY = signatureY - 2;
+    const cardW = 60;
+    const cardH = 34;
+
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(cardX, cardY, cardW, cardH, 3, 3, "F");
+
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(cardX, cardY, cardW, cardH, 3, 3, "S");
+
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(100, 100, 100);
+    doc.text("PAYMENT STATUS", cardX + 14, cardY + 7);
+
+    doc.setDrawColor(0, 168, 232);
+    doc.setLineWidth(0.8);
+    doc.line(cardX + 8, cardY + 10, cardX + 23, cardY + 10);
+    doc.line(cardX + 37, cardY + 10, cardX + 52, cardY + 10);
+
+    doc.setTextColor(0, 64, 115);
+    doc.setFontSize(15);
+    doc.setFont(undefined, "bold");
+    doc.text(`INV-${invoice.invoiceNumber}`, cardX + 14, cardY + 22);
+
+    if ((invoice.paymentStatus || "").toUpperCase() === "PAID") {
+      doc.setTextColor(0, 150, 0);
+    } else {
+      doc.setTextColor(200, 0, 0);
+    }
+
+    doc.setFontSize(12);
+    doc.text(invoice.paymentStatus || "UNPAID", cardX + 20, cardY + 30);
+
+    doc.setDrawColor(0, 168, 232);
+    doc.setLineWidth(1.2);
+    doc.line(cardX, cardY + cardH, cardX + 26, cardY + cardH);
+    doc.line(cardX + 34, cardY + cardH, cardX + cardW, cardY + cardH);
+    doc.line(cardX + 26, cardY + cardH, cardX + 30, cardY + cardH + 3);
+    doc.line(cardX + 34, cardY + cardH, cardX + 30, cardY + cardH + 3);
+
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(80, 80, 80);
+    doc.text("Generated by IronNest Invoice System", 120, signatureY + 34);
 
     const safeName = invoice.customerName
       ? invoice.customerName.replace(/[^a-z0-9]/gi, "_").toLowerCase()
@@ -266,23 +458,6 @@ document.addEventListener("DOMContentLoaded", () => {
   window.downloadSavedInvoice = function(index) {
     createPdf(invoices[index]);
   };
-
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-
-    const invoice = getInvoiceFromForm();
-
-    if (invoice.services.length === 0) {
-      alert("Please add at least one service.");
-      return;
-    }
-
-    invoices.push(invoice);
-    localStorage.setItem("invoices", JSON.stringify(invoices));
-    renderInvoices();
-
-    alert("Invoice saved locally on this device.");
-  });
 
   addServiceRow();
   renderInvoices();
