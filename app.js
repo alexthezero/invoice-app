@@ -312,11 +312,14 @@ async function createPdf(invoice) {
   doc.setTextColor(80, 80, 80);
   doc.text("Customer Signature", 20, 295);
 
-  // Invoice status card
+  // Invoice status card in lower-right
   const cardX = 135;
-  const cardY = 256;
+  const cardY = 254;
   const cardW = 55;
-  const cardH = 32;
+  const cardH = 34;
+
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(cardX, cardY, cardW, cardH, 3, 3, "F");
 
   doc.setDrawColor(180, 180, 180);
   doc.setLineWidth(0.4);
@@ -328,9 +331,9 @@ async function createPdf(invoice) {
   doc.line(cardX + 32, cardY + 8, cardX + 47, cardY + 8);
 
   doc.setTextColor(0, 64, 115);
-  doc.setFontSize(16);
+  doc.setFontSize(15);
   doc.setFont(undefined, "bold");
-  doc.text(`INV-${invoice.invoiceNumber}`, cardX + 13, cardY + 19);
+  doc.text(`INV-${invoice.invoiceNumber}`, cardX + 13, cardY + 20);
 
   if ((invoice.paymentStatus || "").toUpperCase() === "PAID") {
     doc.setTextColor(0, 150, 0);
@@ -338,8 +341,8 @@ async function createPdf(invoice) {
     doc.setTextColor(200, 0, 0);
   }
 
-  doc.setFontSize(13);
-  doc.text(invoice.paymentStatus || "UNPAID", cardX + 18, cardY + 28);
+  doc.setFontSize(12);
+  doc.text(invoice.paymentStatus || "UNPAID", cardX + 18, cardY + 29);
 
   doc.setDrawColor(0, 168, 232);
   doc.setLineWidth(1.2);
