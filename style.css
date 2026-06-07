@@ -89,10 +89,33 @@ textarea {
   margin: 14px 0;
 }
 
-.status-label {
+.status-label,
+.photo-label {
   font-weight: bold;
   display: block;
   margin-bottom: 6px;
+}
+
+.photo-preview-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.photo-preview-row p {
+  font-weight: bold;
+  margin: 4px 0;
+}
+
+.photo-preview {
+  width: 100%;
+  min-height: 120px;
+  max-height: 180px;
+  object-fit: cover;
+  border: 2px solid #b8d8ea;
+  border-radius: 10px;
+  background: #f5fbff;
 }
 
 button {
