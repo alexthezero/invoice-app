@@ -6,18 +6,14 @@
 
   <title>IronNest Pressure Washing Invoice App</title>
 
-  <link rel="stylesheet" href="style.css?v=35" />
+  <link rel="stylesheet" href="style.css?v=36" />
   <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 
 <body>
   <div class="app">
     <div class="brand-header">
-      <img
-        src="./BAB89AB6-21E7-4651-B1DD-469BD6682619.png?v=1"
-        alt="IronNest Pressure Washing Logo"
-      />
-
+      <img src="./BAB89AB6-21E7-4651-B1DD-469BD6682619.png?v=1" alt="IronNest Pressure Washing Logo" />
       <h1>IronNest Pressure Washing</h1>
       <p>Professional Pressure Washing Services</p>
     </div>
@@ -46,14 +42,26 @@
         <option value="PAID">PAID</option>
       </select>
 
-      <input
-        id="amountPaid"
-        type="number"
-        step="0.01"
-        min="0"
-        placeholder="Amount Paid"
-        value="0"
-      />
+      <input id="amountPaid" type="number" step="0.01" min="0" placeholder="Amount Paid" value="0" />
+
+      <h3>Before & After Photos</h3>
+
+      <label class="photo-label">Before Photo</label>
+      <input id="beforePhoto" type="file" accept="image/*" />
+
+      <label class="photo-label">After Photo</label>
+      <input id="afterPhoto" type="file" accept="image/*" />
+
+      <div class="photo-preview-row">
+        <div>
+          <p>Before</p>
+          <img id="beforePreview" class="photo-preview" />
+        </div>
+        <div>
+          <p>After</p>
+          <img id="afterPreview" class="photo-preview" />
+        </div>
+      </div>
 
       <h3>Customer Signature</h3>
       <canvas id="signaturePad"></canvas>
@@ -67,6 +75,6 @@
     <div id="invoiceList"></div>
   </div>
 
-  <script src="app.js?v=35"></script>
+  <script src="app.js?v=36"></script>
 </body>
 </html>
