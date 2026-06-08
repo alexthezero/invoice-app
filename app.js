@@ -78,6 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function startDrawing(e) {
     e.preventDefault();
     drawing = true;
+
     const pos = getPosition(e);
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
@@ -85,7 +86,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function draw(e) {
     if (!drawing) return;
+
     e.preventDefault();
+
     const pos = getPosition(e);
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
@@ -93,6 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function stopDrawing(e) {
     if (!drawing) return;
+
     e.preventDefault();
     drawing = false;
   }
@@ -122,14 +126,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         img.onload = function () {
           const scale = Math.min(maxWidth / img.width, 1);
-          const canvas = document.createElement("canvas");
-          canvas.width = img.width * scale;
-          canvas.height = img.height * scale;
+          const imageCanvas = document.createElement("canvas");
 
-          const imageCtx = canvas.getContext("2d");
-          imageCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          imageCanvas.width = img.width * scale;
+          imageCanvas.height = img.height * scale;
 
-          resolve(canvas.toDataURL("image/jpeg", quality));
+          const imageCtx = imageCanvas.getContext("2d");
+          imageCtx.drawImage(img, 0, 0, imageCanvas.width, imageCanvas.height);
+
+          resolve(imageCanvas.toDataURL("image/jpeg", quality));
         };
 
         img.src = event.target.result;
@@ -302,6 +307,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("customerAddress").value = invoice.customerAddress;
     document.getElementById("customerPhone").value = invoice.customerPhone;
     document.getElementById("invoiceDate").value = invoice.date;
+
     paymentStatusSelect.value = invoice.paymentStatus || "UNPAID";
     amountPaidInput.value = Number(invoice.amountPaid || 0).toFixed(2);
 
@@ -420,7 +426,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const serviceCardX = 10;
     const serviceCardY = 85;
     const serviceCardW = 106;
-    const serviceCardH = 70;
+    const serviceCardH = 82;
 
     doc.setFillColor(255, 255, 255);
     doc.roundedRect(serviceCardX, serviceCardY, serviceCardW, serviceCardH, 5, 5, "F");
@@ -448,29 +454,30 @@ document.addEventListener("DOMContentLoaded", () => {
     let y = serviceCardY + 35;
 
     invoice.services.forEach((service) => {
-      if (y > serviceCardY + 43) return;
-
       const lines = doc.splitTextToSize(service.description || "", 66);
+
       doc.text(lines, serviceCardX + 5, y);
       doc.text(`$${Number(service.price || 0).toFixed(2)}`, serviceCardX + 78, y);
 
       y += Math.max(6, lines.length * 4.5);
     });
 
+    const totalsY = Math.max(serviceCardY + 59, y + 4);
+
     doc.setFillColor(0, 64, 115);
-    doc.roundedRect(serviceCardX + 5, serviceCardY + 47, serviceCardW - 10, 19, 3, 3, "F");
+    doc.roundedRect(serviceCardX + 5, totalsY, serviceCardW - 10, 19, 3, 3, "F");
 
     doc.setTextColor(255, 255, 255);
     doc.setFont(undefined, "bold");
     doc.setFontSize(6.2);
-    doc.text("TOTAL", serviceCardX + 9, serviceCardY + 52);
-    doc.text("PAID", serviceCardX + 9, serviceCardY + 58);
-    doc.text("BALANCE", serviceCardX + 9, serviceCardY + 64);
+    doc.text("TOTAL", serviceCardX + 9, totalsY + 5);
+    doc.text("PAID", serviceCardX + 9, totalsY + 11);
+    doc.text("BALANCE", serviceCardX + 9, totalsY + 17);
 
     doc.setFontSize(7.5);
-    doc.text(`$${Number(invoice.total || 0).toFixed(2)}`, serviceCardX + 36, serviceCardY + 52);
-    doc.text(`$${amountPaid.toFixed(2)}`, serviceCardX + 36, serviceCardY + 58);
-    doc.text(`$${balance.toFixed(2)}`, serviceCardX + 36, serviceCardY + 64);
+    doc.text(`$${Number(invoice.total || 0).toFixed(2)}`, serviceCardX + 36, totalsY + 5);
+    doc.text(`$${amountPaid.toFixed(2)}`, serviceCardX + 36, totalsY + 11);
+    doc.text(`$${balance.toFixed(2)}`, serviceCardX + 36, totalsY + 17);
 
     if (status === "PAID") {
       doc.setFillColor(0, 145, 65);
@@ -480,23 +487,23 @@ document.addEventListener("DOMContentLoaded", () => {
       doc.setFillColor(190, 0, 0);
     }
 
-    doc.roundedRect(serviceCardX + 72, serviceCardY + 54, 28, 8, 2, 2, "F");
+    doc.roundedRect(serviceCardX + 72, totalsY + 7, 28, 8, 2, 2, "F");
 
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(5.2);
 
     if (status === "PAID") {
-      doc.text(status, serviceCardX + 80, serviceCardY + 59.5);
+      doc.text(status, serviceCardX + 80, totalsY + 12.5);
     } else if (status === "PARTIAL") {
-      doc.text(status, serviceCardX + 76.5, serviceCardY + 59.5);
+      doc.text(status, serviceCardX + 76.5, totalsY + 12.5);
     } else {
-      doc.text(status, serviceCardX + 76, serviceCardY + 59.5);
+      doc.text(status, serviceCardX + 76, totalsY + 12.5);
     }
 
     const customerCardX = 122;
     const customerCardY = 85;
     const customerCardW = 78;
-    const customerCardH = 70;
+    const customerCardH = 82;
 
     doc.setFillColor(255, 255, 255);
     doc.roundedRect(customerCardX, customerCardY, customerCardW, customerCardH, 5, 5, "F");
@@ -514,19 +521,19 @@ document.addEventListener("DOMContentLoaded", () => {
     doc.setFont(undefined, "bold");
     doc.setFontSize(8);
     doc.text("Name", customerCardX + 5, customerCardY + 24);
-    doc.text("Address", customerCardX + 5, customerCardY + 36);
-    doc.text("Phone", customerCardX + 5, customerCardY + 49);
-    doc.text("Date", customerCardX + 5, customerCardY + 62);
+    doc.text("Address", customerCardX + 5, customerCardY + 39);
+    doc.text("Phone", customerCardX + 5, customerCardY + 55);
+    doc.text("Date", customerCardX + 5, customerCardY + 70);
 
     doc.setTextColor(0, 0, 0);
     doc.setFont(undefined, "normal");
     doc.setFontSize(8.5);
     doc.text(doc.splitTextToSize(invoice.customerName || "", 43), customerCardX + 29, customerCardY + 24);
-    doc.text(doc.splitTextToSize(invoice.customerAddress || "", 41), customerCardX + 29, customerCardY + 36);
-    doc.text(invoice.customerPhone || "", customerCardX + 29, customerCardY + 49);
-    doc.text(invoice.date || "", customerCardX + 29, customerCardY + 62);
+    doc.text(doc.splitTextToSize(invoice.customerAddress || "", 41), customerCardX + 29, customerCardY + 39);
+    doc.text(invoice.customerPhone || "", customerCardX + 29, customerCardY + 55);
+    doc.text(invoice.date || "", customerCardX + 29, customerCardY + 70);
 
-    const signatureY = 180;
+    const signatureY = 188;
 
     doc.setTextColor(0, 0, 0);
     doc.setFont(undefined, "bold");
